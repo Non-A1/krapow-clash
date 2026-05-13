@@ -4,13 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Krapow-Clash | Royal Thai AI HUD</title>
+    <!-- AI LIBRARIES -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/handpose"></script>
     <script src="https://cdn.jsdelivr.net/npm/fingerpose@0.3.0/dist/fingerpose.min.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
-    <div class="hud-container thai-theme">
+<body class="thai-theme">
+    <div class="hud-container">
         <header>
             <div class="status-bar">
                 <span class="pulse">● SAWASDEE</span>
@@ -21,45 +22,55 @@
         </header>
 
         <main class="main-layout">
-            <!-- Left Panel: AI Vision -->
+            <!-- Left Panel: AI Vision & Chef Stage -->
             <section class="vision-panel">
                 <div class="camera-feed thai-border">
+                    <div id="chef-stage" class="hidden">
+                        <img src="images/thai-chef.png" alt="Chef" class="chef-sprite">
+                        <div class="wok-animation">
+                            <div class="steam"></div>
+                            <div class="flame"></div>
+                        </div>
+                    </div>
                     <div class="scanner-overlay"></div>
                     <p class="feed-label">AI VISION ACTIVE</p>
                 </div>
+                <div class="sensor-readouts">
+                    <div class="sensor">
+                        <label>LACE CRISP %</label>
+                        <div class="progress-bar"><div class="fill" style="width: 65%;"></div></div>
+                    </div>
+                </div>
             </section>
 
-            <!-- Right Panel: Controls -->
+            <!-- Right Panel: Interactive Controls -->
             <section class="control-panel">
-                <!-- 01. Proteins -->
                 <div class="menu-card protein-card">
                     <h3><span class="thai-num">๑</span> PROTEIN</h3>
-                    <div class="btn-grid">
-                        <button class="active"><img src="images/pork.png" alt="" class="protein-icon">PORK</button>
-                        <button><img src="images/chicken.png" alt="" class="protein-icon">CHICKEN</button>
-                        <button><img src="images/beef.png" alt="" class="protein-icon">BEEF</button>
+                    <div class="btn-grid" data-group="protein">
+                        <button class="active"><img src="images/pork.png" alt="" class="food-icon">PORK</button>
+                        <button><img src="images/chicken.png" alt="" class="food-icon">CHICKEN</button>
+                        <button><img src="images/beef.png" alt="" class="food-icon">BEEF</button>
                     </div>
                 </div>
 
-                <!-- 02. Sides (NEW) -->
                 <div class="menu-card side-card">
                     <h3><span class="thai-num">๒</span> SIDES</h3>
-                    <div class="btn-grid">
-                        <button><img src="images/white-rice.png" alt="" class="protein-icon">WHITE RICE</button>
-                        <button><img src="images/brown-rice.png" alt="" class="protein-icon">BROWN RICE</button>
-                        <button><img src="images/puree.png" alt="" class="protein-icon">PUREE</button>
+                    <div class="btn-grid" data-group="side">
+                        <button><img src="images/white-rice.png" alt="" class="food-icon">WHITE RICE</button>
+                        <button><img src="images/brown-rice.png" alt="" class="food-icon">BROWN RICE</button>
+                        <button><img src="images/puree.png" alt="" class="food-icon">PUREE</button>
                         <button>NONE</button>
                     </div>
                 </div>
 
-                <!-- 03. Vegetarian -->
                 <div class="menu-card veggie-card">
                     <h3><span class="thai-num">๓</span> VEGGIES</h3>
-                    <div class="btn-grid">
-                        <button><img src="images/tofu.png" alt="" class="protein-icon">TOFU</button>
-                        <button><img src="images/lettuce.png" alt="" class="protein-icon">LETTUCE</button>
-                        <button><img src="images/spinach.png" alt="" class="protein-icon">SPINACH</button>
-                        <button><img src="images/kale.png" alt="" class="protein-icon">KALE</button>
+                    <div class="btn-grid" data-group="veggie">
+                        <button><img src="images/tofu.png" alt="" class="food-icon">TOFU</button>
+                        <button><img src="images/lettuce.png" alt="" class="food-icon">LETTUCE</button>
+                        <button><img src="images/spinach.png" alt="" class="food-icon">SPINACH</button>
+                        <button><img src="images/kale.png" alt="" class="food-icon">KALE</button>
                     </div>
                 </div>
 
@@ -72,7 +83,66 @@
             </section>
         </main>
     </div>
+
     <video id="video" playsinline style="display: none;"></video>
-    <!-- [Insert previous JavaScript logic here] -->
+
+    <script>
+        const launchBtn = document.querySelector('.launch-btn');
+        const video = document.querySelector("#video");
+        const chefStage = document.querySelector("#chef-stage");
+        const scannerOverlay = document.querySelector(".scanner-overlay");
+
+        // Handle Button Clicks & Animations
+        document.querySelectorAll('.btn-grid button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            });
+        });
+
+        // Setup AI Camera
+        async function setupCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+                video.srcObject = stream;
+                return new Promise((resolve) => video.onloadedmetadata = () => resolve(video));
+            } catch (e) { console.error("Camera error", e); }
+        }
+
+        // Run Hand Tracking & Detection
+        async function runAI() {
+            const model = await handpose.load();
+            const GE = new fp.GestureEstimator([fp.Gestures.ThumbsUpGesture]);
+
+            async function detect() {
+                const predictions = await model.estimateHands(video);
+                if (predictions.length > 0) {
+                    const gesture = await GE.estimate(predictions[0].landmarks, 8.5);
+                    if (gesture.gestures.length > 0) {
+                        const best = gesture.gestures.sort((a,b) => b.confidence - a.confidence)[0];
+                        if (best.name === 'thumbs_up') { launchBtn.click(); }
+                    }
+                }
+                requestAnimationFrame(detect);
+            }
+            detect();
+        }
+
+        launchBtn.addEventListener('click', () => {
+            scannerOverlay.classList.add('hidden');
+            chefStage.classList.remove('hidden');
+            launchBtn.innerText = "CHEF IS COOKING...";
+            launchBtn.classList.add('cooking');
+
+            setTimeout(() => {
+                chefStage.classList.add('hidden');
+                scannerOverlay.classList.remove('hidden');
+                launchBtn.innerText = "DISH READY!";
+                launchBtn.classList.remove('cooking');
+            }, 5000);
+        });
+
+        setupCamera().then(runAI);
+    </script>
 </body>
 </html>
