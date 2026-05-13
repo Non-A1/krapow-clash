@@ -7,7 +7,6 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="street-food-noir">
-    <!-- UI Layout -->
     <div class="tactical-hud">
         <header class="hud-header">
             <div class="system-stats">
@@ -18,6 +17,7 @@
         </header>
 
         <main class="hud-main">
+            <!-- VISION PANEL -->
             <section class="vision-module">
                 <div class="camera-lens">
                     <div id="debug-log">SYSTEM_READY // CLICK_TO_BOOT</div>
@@ -34,8 +34,35 @@
                 </div>
             </section>
 
+            <!-- CONTROL PANEL (RESTORED ITEMS) -->
             <section class="control-module">
-                <!-- Selections... (Keep your previous protein/side/veggie glass-cards here) -->
+                <div class="glass-card" data-category="protein">
+                    <div class="card-label">01 // SELECTION: PROTEIN</div>
+                    <div class="grid-3">
+                        <button class="active" id="pork">PORK</button>
+                        <button id="chicken">CHICKEN</button>
+                        <button id="beef">BEEF</button>
+                    </div>
+                </div>
+
+                <div class="glass-card" data-category="side">
+                    <div class="card-label">02 // SELECTION: BASE</div>
+                    <div class="grid-3">
+                        <button class="active" id="white-rice">W_RICE</button>
+                        <button id="brown-rice">B_RICE</button>
+                        <button id="puree">PUREE</button>
+                    </div>
+                </div>
+
+                <div class="glass-card" data-category="veggie">
+                    <div class="card-label">03 // SELECTION: GREENS</div>
+                    <div class="grid-3">
+                        <button class="active" id="tofu">TOFU</button>
+                        <button id="spinach">SPINACH</button>
+                        <button id="kale">KALE</button>
+                    </div>
+                </div>
+
                 <button class="ignite-btn" id="launch-btn">SYSTEM_BOOT</button>
             </section>
         </main>
@@ -60,7 +87,15 @@
 
         let isBooted = false;
 
-        // *** STEP 1: THE VERIFICATION LOOP (The fix goes here) ***
+        // Selection Logic
+        document.querySelectorAll('.grid-3 button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            });
+        });
+
+        // Verification Loop for Fingerpose Library
         async function getFingerpose() {
             return new Promise((resolve) => {
                 const timer = setInterval(() => {
@@ -73,7 +108,6 @@
             });
         }
 
-        // *** STEP 2: UPDATED BOOT SEQUENCE ***
         async function bootSystem() {
             try {
                 debugLog.innerText = "ACCESSING_LENS...";
@@ -82,7 +116,6 @@
                 await video.play();
                 
                 debugLog.innerText = "WAITING_FOR_AI_HANDSHAKE...";
-                // This line now waits for Step 1 to confirm library status
                 const fp = await getFingerpose();
                 
                 debugLog.innerText = "LOADING_HANDPOSE_MODEL...";
@@ -113,15 +146,47 @@
             }
         }
 
-        // Selection & Trigger logic remains the same...
+        async function triggerCook() {
+            launchBtn.disabled = true;
+            
+            // Construct filename from button IDs
+            const p = document.querySelector('[data-category="protein"] .active').id.toLowerCase();
+            const s = document.querySelector('[data-category="side"] .active').id.toLowerCase().replace(" ", "-");
+            const v = document.querySelector('[data-category="veggie"] .active').id.toLowerCase();
+            const dishID = `${p}-${s}-${v}.png`;
+
+            console.log("Fetching: images/finished/" + dishID);
+
+            document.querySelector('.hud-overlay-grid').style.opacity = '0';
+            chefStage.classList.remove('hidden');
+            launchBtn.innerText = "PROCESSING...";
+            chefImg.style.animationDuration = '0.1s';
+
+            setTimeout(() => {
+                dynamicDish.src = "images/finished/" + dishID;
+                dynamicDish.onerror = () => { 
+                    console.error("Asset missing: " + dishID);
+                    dynamicDish.src = "images/krapow-plate.png"; 
+                };
+
+                plate.classList.remove('hidden');
+                launchBtn.innerText = "COMPLETED";
+
+                setTimeout(() => {
+                    chefStage.classList.add('hidden');
+                    plate.classList.add('hidden');
+                    document.querySelector('.hud-overlay-grid').style.opacity = '1';
+                    launchBtn.innerText = "INITIALIZE_IGNITION";
+                    launchBtn.disabled = false;
+                    chefImg.style.animation = '';
+                }, 4500);
+            }, 3000);
+        }
+
         launchBtn.addEventListener('click', () => {
             if (!isBooted) bootSystem();
             else triggerCook();
         });
-
-        async function triggerCook() {
-            // ... (Keep your triggerCook code here)
-        }
     </script>
 </body>
 </html>
