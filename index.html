@@ -11,8 +11,7 @@
         <header class="hud-header">
             <div class="system-stats">
                 <span class="stat-item pulse">● SYS_ACTIVE</span>
-                <span class="stat-item" id="temp-display">WOK_TEMP: 195°C</span>
-                <span class="stat-item" id="ai-status">AI_STATE: BOOTING</span>
+                <span class="stat-item" id="ai-status">AI_STATE: STANDBY</span>
             </div>
             <h1>KRAPOW_CLASH <span class="thai-glitch">กะเพรา</span></h1>
         </header>
@@ -21,11 +20,10 @@
             <!-- VISION PANEL -->
             <section class="vision-module">
                 <div class="camera-lens">
-                    <div id="debug-log">INIT_SEQUENCE...</div>
+                    <div id="debug-log">TOUCH_TO_BOOT</div>
                     <div id="chef-stage" class="hidden">
                         <div class="kitchen-environment">
                             <img src="images/thai-chef.png" alt="Chef" class="chef-ai" id="chef-img">
-                            <div id="ingredient-drop" class="hidden"></div>
                             <div id="final-plate" class="hidden">
                                 <img src="images/krapow-plate.png" alt="Serve" class="plate-render" id="dynamic-dish">
                                 <div class="serve-alert">MISSION_COMPLETE: ENJOY</div>
@@ -65,22 +63,15 @@
                     </div>
                 </div>
 
-                <div class="glass-card">
-                    <div class="card-label">04 // THERMAL: SPICE_LEVEL</div>
-                    <div class="thermal-slider">
-                        <div id="slider-flame" class="plasma-flame"></div>
-                        <input type="range" min="1" max="10" value="5" class="slider" id="chili-slider">
-                    </div>
-                </div>
-
-                <button class="ignite-btn" id="launch-btn">INITIALIZE_IGNITION</button>
+                <button class="ignite-btn" id="launch-btn">SYSTEM_BOOT</button>
             </section>
         </main>
     </div>
 
+    <!-- Hidden Video for AI Processing -->
     <video id="video" playsinline style="display:none"></video>
 
-    <!-- AI CORE -->
+    <!-- AI CORE LIBRARIES -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.11.0/dist/tf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/handpose@0.0.7/dist/handpose.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/fingerpose@0.3.0/dist/fingerpose.min.js"></script>
@@ -91,12 +82,13 @@
         const debugLog = document.getElementById("debug-log");
         const aiStatus = document.getElementById('ai-status');
         const chefStage = document.getElementById("chef-stage");
-        const dropZone = document.getElementById('ingredient-drop');
         const plate = document.getElementById('final-plate');
         const chefImg = document.getElementById('chef-img');
         const dynamicDish = document.getElementById('dynamic-dish');
 
-        // UI Logic: Tactical Selection
+        let isBooted = false;
+
+        // Selection Logic
         document.querySelectorAll('.grid-4 button').forEach(btn => {
             btn.addEventListener('click', () => {
                 btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('active'));
@@ -104,37 +96,46 @@
             });
         });
 
-        // AI Logic: Gesture Detection
         async function bootSystem() {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                debugLog.innerText = "ACCESSING_CAMERA...";
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } } 
+                });
                 video.srcObject = stream;
                 await video.play();
                 
+                debugLog.innerText = "LOADING_AI_CORES...";
                 const model = await handpose.load();
                 const fp = window.fp || window.fingerpose;
                 const GE = new fp.GestureEstimator([fp.Gestures.ThumbsUpGesture]);
                 
                 aiStatus.innerText = "AI_STATE: ONLINE";
-                debugLog.innerText = "GSR_READY: AWAITING_THUMBS_UP";
+                debugLog.innerText = "GSR_READY: AWAITING_GESTURE";
+                launchBtn.innerText = "INITIALIZE_IGNITION";
+                isBooted = true;
 
                 async function loop() {
                     const hands = await model.estimateHands(video);
                     if (hands.length > 0) {
-                        const est = await GE.estimate(hands[0].landmarks, 8.5);
+                        const est = await GE.estimate(hands[0].landmarks, 8.0);
                         if (est.gestures.length > 0) {
                             const top = est.gestures.sort((a,b) => b.confidence - a.confidence)[0];
-                            if (top.name === 'thumbs_up' && !launchBtn.disabled) launchBtn.click();
+                            if (top.name === 'thumbs_up' && !launchBtn.disabled && isBooted) {
+                                triggerCook();
+                            }
                         }
                     }
                     requestAnimationFrame(loop);
                 }
                 loop();
-            } catch (err) { debugLog.innerText = "SYS_ERR: " + err.message; }
+            } catch (err) { 
+                debugLog.innerText = "SYS_ERR: " + err.message;
+                console.error(err);
+            }
         }
 
-        // Ignition Sequence
-        launchBtn.addEventListener('click', async () => {
+        async function triggerCook() {
             launchBtn.disabled = true;
             const p = document.querySelector('[data-category="protein"] .active').id;
             const s = document.querySelector('[data-category="side"] .active').id;
@@ -160,22 +161,17 @@
                     launchBtn.innerText = "INITIALIZE_IGNITION";
                     launchBtn.disabled = false;
                     chefImg.style.animation = '';
-                }, 4500);
+                }, 4000);
             }, 3000);
-        });
+        }
 
-        // Thermal Dynamics
-        const slider = document.getElementById("chili-slider");
-        const flame = document.getElementById("slider-flame");
-        slider.addEventListener('input', () => {
-            const val = slider.value;
-            const perc = (val - 1) / 9;
-            flame.style.left = `calc(${perc * 100}% - 10px)`;
-            flame.style.transform = `scale(${0.5 + (val * 0.3)})`;
-            flame.style.filter = `hue-rotate(${val * 10}deg) blur(1px)`;
+        launchBtn.addEventListener('click', () => {
+            if (!isBooted) {
+                bootSystem();
+            } else {
+                triggerCook();
+            }
         });
-
-        window.onload = bootSystem;
     </script>
 </body>
 </html>
