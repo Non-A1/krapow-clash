@@ -4,10 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Krapow-Clash | Bamboo Hut AI HUD</title>
-    <!-- LIBS: Locked versions for stability on Desktop & S25 Ultra -->
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.11.0/dist/tf.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/handpose@0.0.7/dist/handpose.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/fingerpose@0.3.0/dist/fingerpose.min.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="bamboo-theme">
@@ -15,7 +11,7 @@
         <header>
             <div class="status-bar">
                 <span class="pulse">● SAWASDEE</span>
-                <span id="ai-status">AI: LOADING...</span>
+                <span id="ai-status">AI: INITIALIZING...</span>
             </div>
             <h1>KRAPOW-CLASH <span class="gold-text">กะเพรา</span></h1>
         </header>
@@ -29,7 +25,6 @@
                             <img src="images/thai-chef.png" alt="Chef" class="chef-sprite" id="chef-img">
                             <div id="ingredient-drop" class="hidden"></div>
                             <div id="final-plate" class="hidden">
-                                <!-- This image source is updated dynamically by the script -->
                                 <img src="images/krapow-plate.png" alt="Finished Dish" class="plate-img" id="dynamic-dish">
                                 <p class="serve-text">อร่อย! (ENJOY!)</p>
                             </div>
@@ -44,25 +39,25 @@
                 <div class="menu-card" data-category="protein">
                     <h3>๑. PROTEIN</h3>
                     <div class="btn-grid">
-                        <button class="active">PORK <img src="images/pork.png" alt="" class="hidden-icon"></button>
-                        <button>CHICKEN <img src="images/chicken.png" alt="" class="hidden-icon"></button>
-                        <button>BEEF <img src="images/beef.png" alt="" class="hidden-icon"></button>
+                        <button class="active">PORK <img src="images/pork.png" alt="" class="hidden-icon" style="display:none"></button>
+                        <button>CHICKEN <img src="images/chicken.png" alt="" class="hidden-icon" style="display:none"></button>
+                        <button>BEEF <img src="images/beef.png" alt="" class="hidden-icon" style="display:none"></button>
                     </div>
                 </div>
                 <div class="menu-card" data-category="side">
                     <h3>๒. SIDES</h3>
                     <div class="btn-grid">
-                        <button class="active">WHITE RICE <img src="images/white-rice.png" alt="" class="hidden-icon"></button>
-                        <button>BROWN RICE <img src="images/brown-rice.png" alt="" class="hidden-icon"></button>
-                        <button>PUREE <img src="images/puree.png" alt="" class="hidden-icon"></button>
+                        <button class="active">WHITE RICE <img src="images/white-rice.png" alt="" class="hidden-icon" style="display:none"></button>
+                        <button>BROWN RICE <img src="images/brown-rice.png" alt="" class="hidden-icon" style="display:none"></button>
+                        <button>PUREE <img src="images/puree.png" alt="" class="hidden-icon" style="display:none"></button>
                     </div>
                 </div>
                 <div class="menu-card" data-category="veggie">
                     <h3>๓. VEGGIES</h3>
                     <div class="btn-grid">
-                        <button class="active">TOFU <img src="images/tofu.png" alt="" class="hidden-icon"></button>
-                        <button>SPINACH <img src="images/spinach.png" alt="" class="hidden-icon"></button>
-                        <button>KALE <img src="images/kale.png" alt="" class="hidden-icon"></button>
+                        <button class="active">TOFU <img src="images/tofu.png" alt="" class="hidden-icon" style="display:none"></button>
+                        <button>SPINACH <img src="images/spinach.png" alt="" class="hidden-icon" style="display:none"></button>
+                        <button>KALE <img src="images/kale.png" alt="" class="hidden-icon" style="display:none"></button>
                     </div>
                 </div>
 
@@ -80,10 +75,16 @@
 
     <video id="video" playsinline style="display:none"></video>
 
+    <!-- AI LIBRARIES LOADED AT END OF BODY TO PREVENT UNDEFINED ERRORS -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.11.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/handpose@0.0.7/dist/handpose.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fingerpose@0.3.0/dist/fingerpose.min.js"></script>
+
     <script>
         const launchBtn = document.getElementById('launch-btn');
         const video = document.getElementById("video");
         const debugLog = document.getElementById("debug-log");
+        const aiStatus = document.getElementById('ai-status');
         const chefStage = document.getElementById("chef-stage");
         const dropZone = document.getElementById('ingredient-drop');
         const plate = document.getElementById('final-plate');
@@ -98,16 +99,27 @@
             });
         });
 
-        // Logic: AI Init
+        // FIXED: AI Init with Library Failsafe
         async function initApp() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true });
                 video.srcObject = stream;
                 await video.play();
+
                 const model = await handpose.load();
-                const fpLib = window.fp || window.fingerpose;
-                const GE = new fpLib.GestureEstimator([fpLib.Gestures.ThumbsUpGesture]);
-                document.getElementById('ai-status').innerText = "AI: ACTIVE";
+                
+                // FIXED: Robust check for fingerpose
+                const fingerposeObj = window.fp || window.fingerpose;
+                if (!fingerposeObj) {
+                    throw new Error("Fingerpose library not found on window object.");
+                }
+
+                const GE = new fingerposeObj.GestureEstimator([
+                    fingerposeObj.Gestures.ThumbsUpGesture
+                ]);
+                
+                aiStatus.innerText = "AI: ACTIVE";
+                debugLog.innerText = "Listening for Thumbs Up...";
 
                 async function detect() {
                     const predictions = await model.estimateHands(video);
@@ -115,31 +127,39 @@
                         const gesture = await GE.estimate(predictions[0].landmarks, 7.5);
                         if (gesture.gestures.length > 0) {
                             const result = gesture.gestures.sort((a,b) => b.confidence - a.confidence)[0];
-                            if (result.name === 'thumbs_up' && !launchBtn.disabled) launchBtn.click();
+                            if (result.name === 'thumbs_up' && !launchBtn.disabled) {
+                                debugLog.innerText = "Gesture Triggered!";
+                                launchBtn.click();
+                            }
                         }
                     }
                     requestAnimationFrame(detect);
                 }
                 detect();
-            } catch (err) { debugLog.innerText = "Error: " + err.message; }
+            } catch (err) { 
+                debugLog.innerText = "Error: " + err.message;
+                aiStatus.innerText = "AI: ERROR";
+                console.error(err);
+            }
         }
 
-        // Narrative Sequence: Dynamic Asset Loading
+        // Narrative Sequence: Drop -> Sizzle -> Serve
         launchBtn.addEventListener('click', async () => {
             launchBtn.disabled = true;
 
-            // 1. Construct Unique Filename based on selections
-            const protein = document.querySelector('[data-category="protein"] .active').innerText.toLowerCase().trim();
+            // Filename construction
+            const protein = document.querySelector('[data-category="protein"] .active').innerText.toLowerCase().split(' ')[0];
             const side = document.querySelector('[data-category="side"] .active').innerText.toLowerCase().replace(" ", "-");
-            const veggie = document.querySelector('[data-category="veggie"] .active').innerText.toLowerCase().trim();
+            const veggie = document.querySelector('[data-category="veggie"] .active').innerText.toLowerCase().split(' ')[0];
             const finalDishKey = `${protein}-${side}-${veggie}.png`;
 
+            // Collect active ingredient icon URLs
             const ingredients = Array.from(document.querySelectorAll('.btn-grid button.active img')).map(img => img.src);
             
             document.querySelector('.scanner-overlay').classList.add('hidden');
             chefStage.classList.remove('hidden');
 
-            // 2. Throwing Animation
+            // 1. Ingredients Throwing Animation
             for (const src of ingredients) {
                 await new Promise(res => {
                     dropZone.style.backgroundImage = `url('${src}')`;
@@ -153,9 +173,9 @@
             chefImg.style.animationDuration = '0.15s';
 
             setTimeout(() => {
-                // 3. Update Presentation Plate with unique dish
+                // 2. Load and Present Unique Dish
                 dynamicDish.src = `images/finished/${finalDishKey}`;
-                dynamicDish.onerror = () => { dynamicDish.src = 'images/krapow-plate.png'; }; // Fallback
+                dynamicDish.onerror = () => { dynamicDish.src = 'images/krapow-plate.png'; };
 
                 chefImg.style.animation = 'none';
                 plate.classList.remove('hidden');
@@ -172,7 +192,18 @@
             }, 2000);
         });
 
-        initApp();
+        // Flame Positioning
+        const chiliSlider = document.getElementById("chili-slider");
+        const sliderFlame = document.getElementById("slider-flame");
+        chiliSlider.addEventListener('input', () => {
+            const val = chiliSlider.value;
+            const percent = (val - 1) / 9;
+            sliderFlame.style.left = `calc(${percent * 100}% - 10px)`;
+            sliderFlame.style.transform = `scale(${0.6 + (val * 0.25)})`;
+        });
+
+        // Start App
+        window.addEventListener('load', initApp);
     </script>
 </body>
 </html>
