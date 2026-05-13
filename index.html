@@ -3,82 +3,84 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Krapow-Clash | Bamboo Hut AI HUD</title>
+    <title>KRAPOW-CLASH | AI HUD</title>
     <link rel="stylesheet" href="style.css">
 </head>
-<body class="bamboo-theme">
-    <div class="hud-container">
-        <header>
-            <div class="status-bar">
-                <span class="pulse">● SAWASDEE</span>
-                <span id="ai-status">AI: INITIALIZING...</span>
+<body class="street-food-noir">
+    <div class="tactical-hud">
+        <header class="hud-header">
+            <div class="system-stats">
+                <span class="stat-item pulse">● SYS_ACTIVE</span>
+                <span class="stat-item" id="temp-display">WOK_TEMP: 195°C</span>
+                <span class="stat-item" id="ai-status">AI_STATE: BOOTING</span>
             </div>
-            <h1>KRAPOW-CLASH <span class="gold-text">กะเพรา</span></h1>
+            <h1>KRAPOW_CLASH <span class="thai-glitch">กะเพรา</span></h1>
         </header>
 
-        <main class="main-layout">
-            <section class="vision-panel">
-                <div class="camera-feed thai-border">
-                    <div id="debug-log">System Booting...</div>
+        <main class="hud-main">
+            <!-- VISION PANEL -->
+            <section class="vision-module">
+                <div class="camera-lens">
+                    <div id="debug-log">INIT_SEQUENCE...</div>
                     <div id="chef-stage" class="hidden">
-                        <div class="chef-container">
-                            <img src="images/thai-chef.png" alt="Chef" class="chef-sprite" id="chef-img">
+                        <div class="kitchen-environment">
+                            <img src="images/thai-chef.png" alt="Chef" class="chef-ai" id="chef-img">
                             <div id="ingredient-drop" class="hidden"></div>
                             <div id="final-plate" class="hidden">
-                                <img src="images/krapow-plate.png" alt="Finished Dish" class="plate-img" id="dynamic-dish">
-                                <p class="serve-text">อร่อย! (ENJOY!)</p>
+                                <img src="images/krapow-plate.png" alt="Serve" class="plate-render" id="dynamic-dish">
+                                <div class="serve-alert">MISSION_COMPLETE: ENJOY</div>
                             </div>
-                            <div class="cooking-fx"><div class="steam-particle"></div></div>
                         </div>
                     </div>
-                    <div class="scanner-overlay"></div>
+                    <div class="hud-overlay-grid"></div>
                 </div>
             </section>
 
-            <section class="control-panel">
-                <!-- Proteins -->
-                <div class="menu-card" data-category="protein">
-                    <h3>๑. PROTEIN</h3>
-                    <div class="btn-grid">
+            <!-- CONTROL PANEL -->
+            <section class="control-module">
+                <div class="glass-card" data-category="protein">
+                    <div class="card-label">01 // SELECTION: PROTEIN</div>
+                    <div class="grid-4">
                         <button class="active" id="pork">PORK</button>
                         <button id="chicken">CHICKEN</button>
                         <button id="beef">BEEF</button>
                     </div>
                 </div>
-                <!-- Sides -->
-                <div class="menu-card" data-category="side">
-                    <h3>๒. SIDES</h3>
-                    <div class="btn-grid">
-                        <button class="active" id="white-rice">WHITE RICE</button>
-                        <button id="brown-rice">BROWN RICE</button>
+
+                <div class="glass-card" data-category="side">
+                    <div class="card-label">02 // SELECTION: BASE</div>
+                    <div class="grid-4">
+                        <button class="active" id="white-rice">W_RICE</button>
+                        <button id="brown-rice">B_RICE</button>
                         <button id="puree">PUREE</button>
                     </div>
                 </div>
-                <!-- Veggies -->
-                <div class="menu-card" data-category="veggie">
-                    <h3>๓. VEGGIES</h3>
-                    <div class="btn-grid">
+
+                <div class="glass-card" data-category="veggie">
+                    <div class="card-label">03 // SELECTION: GREENS</div>
+                    <div class="grid-4">
                         <button class="active" id="tofu">TOFU</button>
                         <button id="spinach">SPINACH</button>
                         <button id="kale">KALE</button>
                     </div>
                 </div>
 
-                <div class="menu-card">
-                    <h3>๔. CHILI LEVEL</h3>
-                    <div class="slider-container">
-                        <div id="slider-flame" class="chili-flame"></div>
+                <div class="glass-card">
+                    <div class="card-label">04 // THERMAL: SPICE_LEVEL</div>
+                    <div class="thermal-slider">
+                        <div id="slider-flame" class="plasma-flame"></div>
                         <input type="range" min="1" max="10" value="5" class="slider" id="chili-slider">
                     </div>
                 </div>
-                <button class="launch-btn" id="launch-btn">INITIALIZE COOK</button>
+
+                <button class="ignite-btn" id="launch-btn">INITIALIZE_IGNITION</button>
             </section>
         </main>
     </div>
 
     <video id="video" playsinline style="display:none"></video>
 
-    <!-- LIBS LOADED WITH FAILSAFE ATTRIBUTES -->
+    <!-- AI CORE -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.11.0/dist/tf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/handpose@0.0.7/dist/handpose.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/fingerpose@0.3.0/dist/fingerpose.min.js"></script>
@@ -94,115 +96,86 @@
         const chefImg = document.getElementById('chef-img');
         const dynamicDish = document.getElementById('dynamic-dish');
 
-        // Button Group Logic
-        document.querySelectorAll('.btn-grid button').forEach(btn => {
+        // UI Logic: Tactical Selection
+        document.querySelectorAll('.grid-4 button').forEach(btn => {
             btn.addEventListener('click', () => {
                 btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
             });
         });
 
-        // SIGNAL SCHOOL STYLE FAILSAFE: Verification of dependencies
-        async function verifyLibs() {
-            return new Promise((resolve) => {
-                const check = () => {
-                    const fp = window.fp || window.fingerpose;
-                    if (window.tf && window.handpose && fp) {
-                        resolve(fp);
-                    } else {
-                        debugLog.innerText = "Connecting AI Signal...";
-                        setTimeout(check, 500);
-                    }
-                };
-                check();
-            });
-        }
-
-        async function initApp() {
+        // AI Logic: Gesture Detection
+        async function bootSystem() {
             try {
-                // 1. Wait for Library "Handshake"
-                const fingerposeObj = await verifyLibs();
-                
-                // 2. Start Camera
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true });
                 video.srcObject = stream;
                 await video.play();
-
-                // 3. Load Handpose Model
-                aiStatus.innerText = "AI: LOADING MODELS...";
+                
                 const model = await handpose.load();
+                const fp = window.fp || window.fingerpose;
+                const GE = new fp.GestureEstimator([fp.Gestures.ThumbsUpGesture]);
                 
-                const GE = new fingerposeObj.GestureEstimator([
-                    fingerposeObj.Gestures.ThumbsUpGesture
-                ]);
-                
-                aiStatus.innerText = "AI: ACTIVE";
-                debugLog.innerText = "Ready for Thumbs Up!";
+                aiStatus.innerText = "AI_STATE: ONLINE";
+                debugLog.innerText = "GSR_READY: AWAITING_THUMBS_UP";
 
-                async function detect() {
-                    const predictions = await model.estimateHands(video);
-                    if (predictions.length > 0) {
-                        const gesture = await GE.estimate(predictions[0].landmarks, 8.0);
-                        if (gesture.gestures.length > 0) {
-                            const result = gesture.gestures.sort((a,b) => b.confidence - a.confidence)[0];
-                            if (result.name === 'thumbs_up' && !launchBtn.disabled) {
-                                launchBtn.click();
-                            }
+                async function loop() {
+                    const hands = await model.estimateHands(video);
+                    if (hands.length > 0) {
+                        const est = await GE.estimate(hands[0].landmarks, 8.5);
+                        if (est.gestures.length > 0) {
+                            const top = est.gestures.sort((a,b) => b.confidence - a.confidence)[0];
+                            if (top.name === 'thumbs_up' && !launchBtn.disabled) launchBtn.click();
                         }
                     }
-                    requestAnimationFrame(detect);
+                    requestAnimationFrame(loop);
                 }
-                detect();
-            } catch (err) { 
-                debugLog.innerText = "Comm Error: " + err.message;
-                aiStatus.innerText = "AI: OFFLINE";
-            }
+                loop();
+            } catch (err) { debugLog.innerText = "SYS_ERR: " + err.message; }
         }
 
-        // Narrative Sequence: Dynamic Dish Presentation
+        // Ignition Sequence
         launchBtn.addEventListener('click', async () => {
             launchBtn.disabled = true;
             const p = document.querySelector('[data-category="protein"] .active').id;
             const s = document.querySelector('[data-category="side"] .active').id;
             const v = document.querySelector('[data-category="veggie"] .active').id;
-            const finalDishKey = `${p}-${s}-${v}.png`;
+            const dishID = `${p}-${s}-${v}.png`;
 
-            document.querySelector('.scanner-overlay').classList.add('hidden');
+            document.querySelector('.hud-overlay-grid').style.opacity = '0';
             chefStage.classList.remove('hidden');
 
-            launchBtn.innerText = "COOKING...";
-            chefImg.style.animationDuration = '0.15s';
+            launchBtn.innerText = "PROCESSING...";
+            chefImg.style.animationDuration = '0.1s';
 
             setTimeout(() => {
-                dynamicDish.src = `images/finished/${finalDishKey}`;
-                dynamicDish.onerror = () => { dynamicDish.src = 'images/krapow-plate.png'; }; 
-
-                chefImg.style.animation = 'none';
+                dynamicDish.src = `images/finished/${dishID}`;
+                dynamicDish.onerror = () => { dynamicDish.src = 'images/krapow-plate.png'; };
                 plate.classList.remove('hidden');
-                launchBtn.innerText = "SERVED!";
+                launchBtn.innerText = "COMPLETED";
 
                 setTimeout(() => {
                     chefStage.classList.add('hidden');
                     plate.classList.add('hidden');
-                    document.querySelector('.scanner-overlay').classList.remove('hidden');
-                    launchBtn.innerText = "INITIALIZE COOK";
+                    document.querySelector('.hud-overlay-grid').style.opacity = '1';
+                    launchBtn.innerText = "INITIALIZE_IGNITION";
                     launchBtn.disabled = false;
                     chefImg.style.animation = '';
-                }, 4000);
+                }, 4500);
             }, 3000);
         });
 
-        // Flame Positioning
-        const chiliSlider = document.getElementById("chili-slider");
-        const sliderFlame = document.getElementById("slider-flame");
-        chiliSlider.addEventListener('input', () => {
-            const val = chiliSlider.value;
-            const percent = (val - 1) / 9;
-            sliderFlame.style.left = `calc(${percent * 100}% - 10px)`;
-            sliderFlame.style.transform = `scale(${0.6 + (val * 0.25)})`;
+        // Thermal Dynamics
+        const slider = document.getElementById("chili-slider");
+        const flame = document.getElementById("slider-flame");
+        slider.addEventListener('input', () => {
+            const val = slider.value;
+            const perc = (val - 1) / 9;
+            flame.style.left = `calc(${perc * 100}% - 10px)`;
+            flame.style.transform = `scale(${0.5 + (val * 0.3)})`;
+            flame.style.filter = `hue-rotate(${val * 10}deg) blur(1px)`;
         });
 
-        window.addEventListener('load', initApp);
+        window.onload = bootSystem;
     </script>
 </body>
 </html>
