@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Krapow-Clash | AI Kitchen HUD</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="hud-container">
+        <!-- Header: System Status -->
+        <header>
+            <div class="status-bar">
+                <span class="pulse">● LIVE</span>
+                <span id="temp-display">WOK TEMP: 185°C</span>
+                <span id="audio-status">AUDIO: LO-FI STREET SYNC</span>
+            </div>
+            <h1>KRAPOW-CLASH <small>v1.0</small></h1>
+        </header>
+
+        <main>
+            <!-- Left Panel: AI Vision & Sensors -->
+            <section class="vision-panel">
+                <div class="camera-feed">
+                    <div class="scanner-overlay"></div>
+                    <p class="feed-label">BASIL & EGG SENSOR</p>
+                </div>
+                <div class="sensor-readouts">
+                    <div class="sensor">
+                        <label>LACE CRISP %</label>
+                        <div class="progress-bar"><div class="fill" style="width: 65%;"></div></div>
+                    </div>
+                    <div class="sensor">
+                        <label>AROMATIC VOLUMES</label>
+                        <div class="progress-bar"><div class="fill" style="width: 40%;"></div></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Right Panel: Interactive Controls -->
+            <section class="control-panel">
+                
+                <!-- Meat Selection -->
+                <div class="menu-card protein-card">
+                    <h3>01. PROTEIN SELECTION</h3>
+                    <div class="btn-grid">
+                        <button class="active">PORK</button>
+                        <button>CHICKEN</button>
+                        <button>BEEF</button>
+                    </div>
+                </div>
+
+                <!-- Vegetarian Selection -->
+                <div class="menu-card veggie-card">
+                    <h3>02. VEGETARIAN & BASES</h3>
+                    <div class="btn-grid">
+                        <button>TOFU</button>
+                        <button>LETTUCE</button>
+                        <button>SPINACH</button>
+                        <button>KALE</button>
+                    </div>
+                    <p class="hint-text">*AI will adjust cook times for leafy greens to prevent wilting.</p>
+                </div>
+
+                <!-- Chili Calibration -->
+                <div class="menu-card">
+                    <h3>03. CHILI CALIBRATION</h3>
+                    <input type="range" min="1" max="10" value="7" class="slider">
+                    <div class="slider-labels"><span>MILD</span><span>NUCLEAR</span></div>
+                </div>
+
+                <button class="launch-btn">INITIALIZE STIR-FRY</button>
+            </section>
+        </main>
+
+        <!-- Footer: Ambient Control -->
+        <footer>
+            <div class="music-player">
+                <p>NOW PLAYING: <strong>Bangkok Alley Beats (AI Gen)</strong></p>
+                <div class="waveform">
+                    <span></span><span></span><span></span><span></span><span></span>
+                </div>
+            </div>
+        </footer>
+    </div>
+</body>
+</html>
