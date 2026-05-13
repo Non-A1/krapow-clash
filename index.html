@@ -4,10 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Krapow-Clash | Bamboo Hut AI HUD</title>
-    <!-- AI LIBRARIES - Ensuring correct global availability -->
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/handpose"></script>
-    <!-- Added fallback to ensure fp is defined -->
+    <!-- LIBS -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.11.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/handpose@0.0.7/dist/handpose.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/fingerpose@0.3.0/dist/fingerpose.min.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
@@ -16,8 +15,7 @@
         <header>
             <div class="status-bar">
                 <span class="pulse">● SAWASDEE</span>
-                <span id="temp-display">WOK: 185°C</span>
-                <span id="audio-status">LO-FI: ACTIVE</span>
+                <span id="ai-status">AI: LOADING...</span>
             </div>
             <h1>KRAPOW-CLASH <span class="gold-text">กะเพรา</span></h1>
         </header>
@@ -25,139 +23,126 @@
         <main class="main-layout">
             <section class="vision-panel">
                 <div class="camera-feed thai-border">
+                    <!-- DEBUG HUD: Shows what AI sees -->
+                    <div id="debug-log">Ready...</div>
+                    
                     <div id="chef-stage" class="hidden">
                         <div class="chef-container">
                             <img src="images/thai-chef.png" alt="Chef" class="chef-sprite" id="chef-img">
                             <div id="ingredient-drop" class="hidden"></div>
                             <div id="final-plate" class="hidden">
-                                <!-- FIX: Corrected path to images folder based on image_55143b.png error -->
                                 <img src="images/krapow-plate.png" alt="Finished Dish" class="plate-img">
                                 <p class="serve-text">อร่อย! (ENJOY!)</p>
                             </div>
-                            <div class="cooking-fx">
-                                <div class="steam-particle"></div>
-                                <div class="fire-base"></div>
-                            </div>
+                            <div class="cooking-fx"><div class="steam-particle"></div></div>
                         </div>
                     </div>
                     <div class="scanner-overlay"></div>
-                    <p class="feed-label">AI VISION ACTIVE</p>
                 </div>
             </section>
 
             <section class="control-panel">
-                <div class="menu-card protein-card">
-                    <h3><span class="thai-num">๑</span> PROTEIN</h3>
+                <!-- Proteins Group -->
+                <div class="menu-card">
+                    <h3>๑. PROTEIN</h3>
                     <div class="btn-grid" data-group="protein">
                         <button class="active"><img src="images/pork.png" alt="" class="food-icon">PORK</button>
                         <button><img src="images/chicken.png" alt="" class="food-icon">CHICKEN</button>
                         <button><img src="images/beef.png" alt="" class="food-icon">BEEF</button>
                     </div>
                 </div>
-
-                <div class="menu-card side-card">
-                    <h3><span class="thai-num">๒</span> SIDES</h3>
+                <!-- Sides Group -->
+                <div class="menu-card">
+                    <h3>๒. SIDES</h3>
                     <div class="btn-grid" data-group="side">
                         <button class="active"><img src="images/white-rice.png" alt="" class="food-icon">WHITE RICE</button>
                         <button><img src="images/brown-rice.png" alt="" class="food-icon">BROWN RICE</button>
                         <button><img src="images/puree.png" alt="" class="food-icon">PUREE</button>
-                        <button>NONE</button>
                     </div>
                 </div>
-
-                <div class="menu-card veggie-card">
-                    <h3><span class="thai-num">๓</span> VEGGIES</h3>
+                <!-- Veg Group -->
+                <div class="menu-card">
+                    <h3>๓. VEGGIES</h3>
                     <div class="btn-grid" data-group="veggie">
                         <button class="active"><img src="images/tofu.png" alt="" class="food-icon">TOFU</button>
                         <button><img src="images/lettuce.png" alt="" class="food-icon">LETTUCE</button>
-                        <button><img src="images/spinach.png" alt="" class="food-icon">SPINACH</button>
-                        <button><img src="images/kale.png" alt="" class="food-icon">KALE</button>
                     </div>
                 </div>
-
-                <div class="menu-card spice-card">
-                    <h3><span class="thai-num">๔</span> CHILI LEVEL</h3>
+                <!-- Spice Slider -->
+                <div class="menu-card">
+                    <h3>๔. CHILI LEVEL</h3>
                     <div class="slider-container">
                         <div id="slider-flame" class="chili-flame"></div>
                         <input type="range" min="1" max="10" value="5" class="slider" id="chili-slider">
                     </div>
                 </div>
-
-                <button class="launch-btn thai-btn" id="launch-btn">INITIALIZE COOK</button>
+                <button class="launch-btn" id="launch-btn">INITIALIZE COOK</button>
             </section>
         </main>
     </div>
 
-    <video id="video" playsinline style="display: none;"></video>
+    <video id="video" playsinline style="display:none"></video>
 
     <script>
         const launchBtn = document.getElementById('launch-btn');
         const video = document.getElementById("video");
+        const aiStatus = document.getElementById("ai-status");
+        const debugLog = document.getElementById("debug-log");
         const chefStage = document.getElementById("chef-stage");
-        const scannerOverlay = document.querySelector(".scanner-overlay");
-        const chiliSlider = document.getElementById("chili-slider");
-        const sliderFlame = document.getElementById("slider-flame");
-        const dropZone = document.getElementById('ingredient-drop');
         const plate = document.getElementById('final-plate');
-        const chefImg = document.getElementById('chef-img');
+        const dropZone = document.getElementById('ingredient-drop');
 
-        // Flame Positioning Logic
-        function updateFlame() {
-            const val = chiliSlider.value;
-            const percent = (val - 1) / 9;
-            sliderFlame.style.left = `calc(${percent * 100}% - 10px)`;
-            const scale = 0.6 + (val * 0.25);
-            sliderFlame.style.transform = `scale(${scale})`;
-            sliderFlame.style.boxShadow = `0 0 ${val * 6}px #ff4500`;
-        }
-        chiliSlider.addEventListener('input', updateFlame);
-        updateFlame();
-
-        document.querySelectorAll('.btn-grid button').forEach(btn => {
-            btn.addEventListener('click', () => {
-                btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-            });
-        });
-
-        async function setupCamera() {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480, facingMode: "user" } });
-            video.srcObject = stream;
-            return new Promise((resolve) => {
-                video.onloadedmetadata = () => { video.play(); resolve(video); };
-            });
+        // 1. Camera Setup
+        async function startCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = stream;
+                await video.play();
+                debugLog.innerText = "Camera: Active";
+            } catch (err) {
+                debugLog.innerText = "Camera Error: " + err.message;
+            }
         }
 
-        async function runAI() {
+        // 2. AI Implementation
+        async function initAI() {
+            aiStatus.innerText = "AI: LOADING MODEL...";
             const model = await handpose.load();
+            aiStatus.innerText = "AI: READY";
             
-            // Troubleshooting the 'fp is not defined' error from image_55143b.png
-            // We check for window.fingerpose which is how the library often initializes
-            const fingerposeLibrary = window.fp || window.fingerpose;
-            
-            if (!fingerposeLibrary) {
-                console.error("Fingerpose library failed to load. Check your internet connection.");
+            // Critical Fix: Explicitly checking library load
+            const fpLib = window.fp || window.fingerpose;
+            if (!fpLib) {
+                debugLog.innerText = "Error: Fingerpose Lib missing";
                 return;
             }
 
-            const GE = new fingerposeLibrary.GestureEstimator([
-                fingerposeLibrary.Gestures.ThumbsUpGesture
-            ]);
+            const GE = new fpLib.GestureEstimator([fpLib.Gestures.ThumbsUpGesture]);
 
-            async function detect() {
+            async function frameLoop() {
                 const predictions = await model.estimateHands(video);
+                
                 if (predictions.length > 0) {
+                    debugLog.innerText = "Hand Detected";
                     const gesture = await GE.estimate(predictions[0].landmarks, 7.5);
+                    
                     if (gesture.gestures.length > 0) {
-                        const best = gesture.gestures.sort((a,b) => b.confidence - a.confidence)[0];
-                        if (best.name === 'thumbs_up' && !launchBtn.disabled) { launchBtn.click(); }
+                        const result = gesture.gestures.sort((a,b) => b.confidence - a.confidence)[0];
+                        debugLog.innerText = `Detected: ${result.name} (${Math.round(result.confidence)}%)`;
+                        
+                        if (result.name === 'thumbs_up' && !launchBtn.disabled) {
+                            launchBtn.click();
+                        }
                     }
+                } else {
+                    debugLog.innerText = "No hand in view";
                 }
-                requestAnimationFrame(detect);
+                requestAnimationFrame(frameLoop);
             }
-            detect();
+            frameLoop();
         }
 
+        // 3. Narrative Sequence
         launchBtn.addEventListener('click', async () => {
             launchBtn.disabled = true;
             const ingredients = [
@@ -166,7 +151,7 @@
                 document.querySelector('[data-group="veggie"] .active img')?.src
             ].filter(Boolean);
 
-            scannerOverlay.classList.add('hidden');
+            document.querySelector('.scanner-overlay').classList.add('hidden');
             chefStage.classList.remove('hidden');
 
             for (const src of ingredients) {
@@ -178,25 +163,32 @@
                 });
             }
 
-            launchBtn.innerText = "SIZZLING...";
-            chefImg.style.animationDuration = '0.15s';
-
+            launchBtn.innerText = "COOKING...";
             setTimeout(() => {
-                chefImg.style.animation = 'none';
                 plate.classList.remove('hidden');
                 launchBtn.innerText = "SERVED!";
                 setTimeout(() => {
                     chefStage.classList.add('hidden');
                     plate.classList.add('hidden');
-                    scannerOverlay.classList.remove('hidden');
+                    document.querySelector('.scanner-overlay').classList.remove('hidden');
                     launchBtn.innerText = "INITIALIZE COOK";
                     launchBtn.disabled = false;
-                    chefImg.style.animation = '';
                 }, 4000);
             }, 2000);
         });
 
-        setupCamera().then(runAI);
+        // Initialize
+        startCamera().then(initAI);
+
+        // Flame Positioning
+        const chiliSlider = document.getElementById("chili-slider");
+        const sliderFlame = document.getElementById("slider-flame");
+        chiliSlider.addEventListener('input', () => {
+            const val = chiliSlider.value;
+            const percent = (val - 1) / 9;
+            sliderFlame.style.left = `calc(${percent * 100}% - 10px)`;
+            sliderFlame.style.transform = `scale(${0.6 + (val * 0.25)})`;
+        });
     </script>
 </body>
 </html>
