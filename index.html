@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Krapow-Clash | AI Kitchen HUD</title>
     <!-- AI LIBRARIES -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
@@ -15,75 +15,58 @@
         <header>
             <div class="status-bar">
                 <span class="pulse">● LIVE</span>
-                <span id="temp-display">WOK TEMP: 185°C</span>
-                <span id="audio-status">AUDIO: LO-FI STREET SYNC</span>
+                <span id="temp-display">WOK: 185°C</span>
+                <span id="audio-status">SYNC: ON</span>
             </div>
-            <h1>KRAPOW-CLASH <small>v1.0</small></h1>
+            <h1>KRAPOW-CLASH</h1>
         </header>
 
-        <main>
+        <main class="main-layout">
             <section class="vision-panel">
                 <div class="camera-feed">
                     <div class="scanner-overlay"></div>
-                    <p class="feed-label">BASIL & EGG SENSOR</p>
+                    <p class="feed-label">AI VISION ACTIVE</p>
                 </div>
                 <div class="sensor-readouts">
                     <div class="sensor">
                         <label>LACE CRISP %</label>
                         <div class="progress-bar"><div class="fill" style="width: 65%;"></div></div>
                     </div>
-                    <div class="sensor">
-                        <label>AROMATIC VOLUMES</label>
-                        <div class="progress-bar"><div class="fill" style="width: 40%;"></div></div>
-                    </div>
                 </div>
             </section>
 
             <section class="control-panel">
-                <!-- Meat Selection with Images -->
                 <div class="menu-card protein-card">
-                    <h3>01. PROTEIN SELECTION</h3>
+                    <h3>01. PROTEIN</h3>
                     <div class="btn-grid">
-                        <button class="active">
-                            <img src="images/pork.png" alt="" class="protein-icon"> PORK
-                        </button>
-                        <button>
-                            <img src="images/chicken.png" alt="" class="protein-icon"> CHICKEN
-                        </button>
-                        <button>
-                            <img src="images/beef.png" alt="" class="protein-icon"> BEEF
-                        </button>
+                        <button class="active"><img src="images/pork.png" alt="" class="protein-icon">PORK</button>
+                        <button><img src="images/chicken.png" alt="" class="protein-icon">CHICKEN</button>
+                        <button><img src="images/beef.png" alt="" class="protein-icon">BEEF</button>
                     </div>
                 </div>
 
-                <!-- Vegetarian Selection with Images -->
                 <div class="menu-card veggie-card">
-                    <h3>02. VEGETARIAN & BASES</h3>
+                    <h3>02. VEGETARIAN</h3>
                     <div class="btn-grid">
-                        <button><img src="images/tofu.png" alt="" class="protein-icon"> TOFU</button>
-                        <button><img src="images/lettuce.png" alt="" class="protein-icon"> LETTUCE</button>
-                        <button><img src="images/spinach.png" alt="" class="protein-icon"> SPINACH</button>
-                        <button><img src="images/kale.png" alt="" class="protein-icon"> KALE</button>
+                        <button><img src="images/tofu.png" alt="" class="protein-icon">TOFU</button>
+                        <button><img src="images/lettuce.png" alt="" class="protein-icon">LETTUCE</button>
+                        <button><img src="images/spinach.png" alt="" class="protein-icon">SPINACH</button>
+                        <button><img src="images/kale.png" alt="" class="protein-icon">KALE</button>
                     </div>
-                    <p class="hint-text">*AI will adjust cook times for leafy greens.</p>
                 </div>
 
                 <div class="menu-card">
-                    <h3>03. CHILI CALIBRATION</h3>
+                    <h3>03. CHILI</h3>
                     <input type="range" min="1" max="10" value="7" class="slider">
-                    <div class="slider-labels"><span>MILD</span><span>NUCLEAR</span></div>
                 </div>
 
-                <button class="launch-btn">INITIALIZE STIR-FRY</button>
+                <button class="launch-btn">INITIALIZE</button>
             </section>
         </main>
 
         <footer>
             <div class="music-player">
-                <p>NOW PLAYING: <strong>Bangkok Alley Beats (AI Gen)</strong></p>
-                <div class="waveform">
-                    <span></span><span></span><span></span><span></span><span></span>
-                </div>
+                <div class="waveform"><span></span><span></span><span></span><span></span><span></span></div>
             </div>
         </footer>
     </div>
@@ -95,36 +78,25 @@
         const video = document.querySelector("#video");
 
         async function setupCamera() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { width: 640, height: 480, facingMode: "user" } 
-                });
-                video.srcObject = stream;
-                return new Promise((resolve) => {
-                    video.onloadedmetadata = () => resolve(video);
-                });
-            } catch (e) {
-                console.error("Camera access denied", e);
-            }
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { facingMode: "user" } 
+            });
+            video.srcObject = stream;
+            return new Promise((resolve) => video.onloadedmetadata = () => resolve(video));
         }
 
         async function runDetection() {
             const model = await handpose.load();
             const GE = new fp.GestureEstimator([fp.Gestures.ThumbsUpGesture]);
-
             async function detect() {
                 const predictions = await model.estimateHands(video);
                 if (predictions.length > 0) {
                     const gesture = await GE.estimate(predictions[0].landmarks, 8.0);
                     if (gesture.gestures.length > 0) {
-                        const bestGesture = gesture.gestures.sort((a, b) => b.confidence - a.confidence)[0];
-                        if (bestGesture.name === 'thumbs_up') {
+                        const best = gesture.gestures.sort((a,b) => b.confidence - a.confidence)[0];
+                        if (best.name === 'thumbs_up') {
                             launchBtn.style.background = "#00F3FF";
-                            launchBtn.innerText = "GESTURE RECOGNIZED!";
-                            setTimeout(() => { 
-                                launchBtn.style.background = "#39FF14";
-                                launchBtn.innerText = "INITIALIZE STIR-FRY";
-                            }, 2000);
+                            launchBtn.innerText = "STARTING...";
                         }
                     }
                 }
