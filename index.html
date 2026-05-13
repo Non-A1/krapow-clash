@@ -39,25 +39,25 @@
                 <div class="menu-card" data-category="protein">
                     <h3>๑. PROTEIN</h3>
                     <div class="btn-grid">
-                        <button class="active">PORK <img src="images/pork.png" alt="" class="hidden-icon" style="display:none"></button>
-                        <button>CHICKEN <img src="images/chicken.png" alt="" class="hidden-icon" style="display:none"></button>
-                        <button>BEEF <img src="images/beef.png" alt="" class="hidden-icon" style="display:none"></button>
+                        <button class="active" id="pork">PORK <img src="images/pork.png" alt="" style="display:none"></button>
+                        <button id="chicken">CHICKEN <img src="images/chicken.png" alt="" style="display:none"></button>
+                        <button id="beef">BEEF <img src="images/beef.png" alt="" style="display:none"></button>
                     </div>
                 </div>
                 <div class="menu-card" data-category="side">
                     <h3>๒. SIDES</h3>
                     <div class="btn-grid">
-                        <button class="active">WHITE RICE <img src="images/white-rice.png" alt="" class="hidden-icon" style="display:none"></button>
-                        <button>BROWN RICE <img src="images/brown-rice.png" alt="" class="hidden-icon" style="display:none"></button>
-                        <button>PUREE <img src="images/puree.png" alt="" class="hidden-icon" style="display:none"></button>
+                        <button class="active" id="white-rice">WHITE RICE <img src="images/white-rice.png" alt="" style="display:none"></button>
+                        <button id="brown-rice">BROWN RICE <img src="images/brown-rice.png" alt="" style="display:none"></button>
+                        <button id="puree">PUREE <img src="images/puree.png" alt="" style="display:none"></button>
                     </div>
                 </div>
                 <div class="menu-card" data-category="veggie">
                     <h3>๓. VEGGIES</h3>
                     <div class="btn-grid">
-                        <button class="active">TOFU <img src="images/tofu.png" alt="" class="hidden-icon" style="display:none"></button>
-                        <button>SPINACH <img src="images/spinach.png" alt="" class="hidden-icon" style="display:none"></button>
-                        <button>KALE <img src="images/kale.png" alt="" class="hidden-icon" style="display:none"></button>
+                        <button class="active" id="tofu">TOFU <img src="images/tofu.png" alt="" style="display:none"></button>
+                        <button id="spinach">SPINACH <img src="images/spinach.png" alt="" style="display:none"></button>
+                        <button id="kale">KALE <img src="images/kale.png" alt="" style="display:none"></button>
                     </div>
                 </div>
 
@@ -75,7 +75,7 @@
 
     <video id="video" playsinline style="display:none"></video>
 
-    <!-- AI LIBRARIES LOADED AT END OF BODY TO PREVENT UNDEFINED ERRORS -->
+    <!-- LOAD LIBRARIES SEQUENTIALLY -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.11.0/dist/tf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/handpose@0.0.7/dist/handpose.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/fingerpose@0.3.0/dist/fingerpose.min.js"></script>
@@ -91,7 +91,7 @@
         const chefImg = document.getElementById('chef-img');
         const dynamicDish = document.getElementById('dynamic-dish');
 
-        // Logic: Button Selection
+        // Selection Logic
         document.querySelectorAll('.btn-grid button').forEach(btn => {
             btn.addEventListener('click', () => {
                 btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('active'));
@@ -99,36 +99,37 @@
             });
         });
 
-        // FIXED: AI Init with Library Failsafe
+        // RE-ENGINEERED AI INITIALIZATION
         async function initApp() {
             try {
+                // 1. Start Camera
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true });
                 video.srcObject = stream;
                 await video.play();
 
+                // 2. Load Models
+                aiStatus.innerText = "AI: LOADING MODELS...";
                 const model = await handpose.load();
                 
-                // FIXED: Robust check for fingerpose
-                const fingerposeObj = window.fp || window.fingerpose;
-                if (!fingerposeObj) {
-                    throw new Error("Fingerpose library not found on window object.");
+                // 3. Robust Library Check for Fingerpose (Fixes image_4a94e8 error)
+                const fp = window.fp || window.fingerpose;
+                if (!fp || !fp.GestureEstimator) {
+                    throw new Error("Hand Recognition Library not found.");
                 }
 
-                const GE = new fingerposeObj.GestureEstimator([
-                    fingerposeObj.Gestures.ThumbsUpGesture
-                ]);
+                const GE = new fp.GestureEstimator([fp.Gestures.ThumbsUpGesture]);
                 
                 aiStatus.innerText = "AI: ACTIVE";
-                debugLog.innerText = "Listening for Thumbs Up...";
+                debugLog.innerText = "Ready for Thumbs Up!";
 
                 async function detect() {
                     const predictions = await model.estimateHands(video);
                     if (predictions.length > 0) {
-                        const gesture = await GE.estimate(predictions[0].landmarks, 7.5);
+                        const gesture = await GE.estimate(predictions[0].landmarks, 8.0);
                         if (gesture.gestures.length > 0) {
                             const result = gesture.gestures.sort((a,b) => b.confidence - a.confidence)[0];
                             if (result.name === 'thumbs_up' && !launchBtn.disabled) {
-                                debugLog.innerText = "Gesture Triggered!";
+                                debugLog.innerText = "GESTURE TRIGGERED!";
                                 launchBtn.click();
                             }
                         }
@@ -139,7 +140,6 @@
             } catch (err) { 
                 debugLog.innerText = "Error: " + err.message;
                 aiStatus.innerText = "AI: ERROR";
-                console.error(err);
             }
         }
 
@@ -147,13 +147,12 @@
         launchBtn.addEventListener('click', async () => {
             launchBtn.disabled = true;
 
-            // Filename construction
-            const protein = document.querySelector('[data-category="protein"] .active').innerText.toLowerCase().split(' ')[0];
-            const side = document.querySelector('[data-category="side"] .active').innerText.toLowerCase().replace(" ", "-");
-            const veggie = document.querySelector('[data-category="veggie"] .active').innerText.toLowerCase().split(' ')[0];
-            const finalDishKey = `${protein}-${side}-${veggie}.png`;
+            // Filename construction for unique Ghibli dishes
+            const p = document.querySelector('[data-category="protein"] .active').id;
+            const s = document.querySelector('[data-category="side"] .active').id;
+            const v = document.querySelector('[data-category="veggie"] .active').id;
+            const finalDishKey = `${p}-${s}-${v}.png`;
 
-            // Collect active ingredient icon URLs
             const ingredients = Array.from(document.querySelectorAll('.btn-grid button.active img')).map(img => img.src);
             
             document.querySelector('.scanner-overlay').classList.add('hidden');
@@ -173,9 +172,9 @@
             chefImg.style.animationDuration = '0.15s';
 
             setTimeout(() => {
-                // 2. Load and Present Unique Dish
+                // 2. Presentation with Unique Dish Icon
                 dynamicDish.src = `images/finished/${finalDishKey}`;
-                dynamicDish.onerror = () => { dynamicDish.src = 'images/krapow-plate.png'; };
+                dynamicDish.onerror = () => { dynamicDish.src = 'images/krapow-plate.png'; }; // Fallback
 
                 chefImg.style.animation = 'none';
                 plate.classList.remove('hidden');
@@ -192,7 +191,7 @@
             }, 2000);
         });
 
-        // Flame Positioning
+        // Flame Positioning Logic
         const chiliSlider = document.getElementById("chili-slider");
         const sliderFlame = document.getElementById("slider-flame");
         chiliSlider.addEventListener('input', () => {
@@ -202,8 +201,7 @@
             sliderFlame.style.transform = `scale(${0.6 + (val * 0.25)})`;
         });
 
-        // Start App
-        window.addEventListener('load', initApp);
+        window.onload = initApp;
     </script>
 </body>
 </html>
