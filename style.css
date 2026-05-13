@@ -1,54 +1,83 @@
 :root {
-    --thai-gold: #D4AF37;
-    --thai-maroon: #4A0E0E;
-    --thai-black-glass: rgba(20, 20, 20, 0.9);
+    --gold: #D4AF37;
+    --noir: #0a0a0a;
+    --glass: rgba(255, 255, 255, 0.05);
+    --alert: #ff3c3c;
 }
 
-body, html {
-    margin: 0; padding: 0;
-    background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), 
-                url('https://images.unsplash.com/photo-1542124113-bc752317303c?q=80&w=2070&auto=format&fit=crop') fixed center/cover;
-    color: #f1f1f1; font-family: 'Georgia', serif;
+body {
+    margin: 0; background: var(--noir);
+    font-family: 'Courier New', Courier, monospace;
+    color: #eee; overflow: hidden;
 }
 
-.hud-container {
-    background: var(--thai-black-glass); backdrop-filter: blur(10px);
-    border: 3px double var(--thai-gold); margin: 10px; padding: 15px; border-radius: 15px;
+/* Background Texture */
+.street-food-noir::before {
+    content: ""; position: fixed; width: 100%; height: 100%;
+    background: url('https://images.unsplash.com/photo-1542124113-bc752317303c?q=80&w=2070') center/cover;
+    opacity: 0.2; filter: grayscale(100%); z-index: -1;
 }
 
-/* Narrative Animations */
-.chef-sprite { width: 160px; animation: toss 0.4s infinite alternate ease-in-out; }
-@keyframes toss { from { transform: rotate(-2deg); } to { transform: translateY(-8px) rotate(2deg); } }
-
-.ingredient-anim {
-    position: absolute; width: 50px; height: 50px; background: center/contain no-repeat;
-    left: 50%; margin-left: -25px; top: 10%;
-    animation: throw-in 0.8s ease-in forwards;
+.tactical-hud {
+    padding: 20px; height: 95vh;
+    display: flex; flex-direction: column; gap: 20px;
 }
 
-@keyframes throw-in {
-    0% { transform: translateY(0) scale(0.5); opacity: 0; }
-    50% { opacity: 1; }
-    100% { transform: translateY(240px) scale(1.2); opacity: 0; } /* Falls into wok */
+/* Glassmorphism Cards */
+.glass-card {
+    background: var(--glass);
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(212, 175, 55, 0.2);
+    padding: 15px; border-radius: 4px;
+    margin-bottom: 10px;
 }
 
-#final-plate {
-    position: absolute; top: 20%; left: 50%; transform: translateX(-50%);
-    animation: present 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+.card-label { font-size: 0.7rem; color: var(--gold); margin-bottom: 10px; letter-spacing: 2px; }
+
+/* Grid Layouts */
+.hud-main { display: flex; flex-direction: column; gap: 20px; }
+@media (min-width: 768px) { .hud-main { flex-direction: row; } .vision-module, .control-module { flex: 1; } }
+
+/* Vision System */
+.camera-lens {
+    width: 100%; aspect-ratio: 16/9; background: #000;
+    border: 1px solid var(--gold); position: relative;
 }
 
-@keyframes present { 
-    0% { transform: translate(-50%, 30px) scale(0); opacity: 0; }
-    100% { transform: translate(-50%, 0) scale(1); opacity: 1; }
+.hud-overlay-grid {
+    position: absolute; width: 100%; height: 100%;
+    background-image: linear-gradient(rgba(212,175,55,0.1) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(212,175,55,0.1) 1px, transparent 1px);
+    background-size: 40px 40px; pointer-events: none;
 }
 
-.plate-img { width: 180px; filter: drop-shadow(0 0 15px var(--thai-gold)); }
+/* Buttons */
+.grid-4 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+button {
+    background: transparent; border: 1px solid #444; color: #888;
+    padding: 10px; font-size: 0.7rem; cursor: pointer; transition: 0.3s;
+}
+button.active { border-color: var(--gold); color: var(--gold); background: rgba(212, 175, 55, 0.1); }
 
-/* HUD Elements */
-.menu-card { background: rgba(74, 14, 14, 0.8); border-left: 5px solid var(--thai-gold); padding: 10px; margin-bottom: 10px; }
-.btn-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
-.btn-grid button { background: rgba(255,255,255,0.05); border: 1px solid #444; color: #ccc; font-size: 0.6rem; padding: 10px 0; }
-.btn-grid button.active { background: var(--thai-gold); color: black; box-shadow: 0 0 10px var(--thai-gold); }
-.food-icon { width: 22px; height: 22px; filter: invert(1); }
+/* Plasma Flame */
+.thermal-slider { position: relative; padding-top: 30px; }
+.plasma-flame {
+    position: absolute; top: 0; left: 50%; width: 20px; height: 25px;
+    background: linear-gradient(to top, var(--alert), var(--gold), transparent);
+    border-radius: 50% 50% 20% 20%; filter: blur(1px);
+    animation: flicker 0.1s infinite alternate;
+}
+
+@keyframes flicker { from { opacity: 0.8; } to { opacity: 1; transform: translateY(-2px); } }
+
+.slider { -webkit-appearance: none; width: 100%; background: #222; height: 4px; }
+.slider::-webkit-slider-thumb { -webkit-appearance: none; width: 15px; height: 15px; background: var(--gold); border-radius: 50%; cursor: pointer; }
+
+/* Ignition Button */
+.ignite-btn {
+    width: 100%; padding: 20px; background: transparent;
+    border: 1px solid var(--gold); color: var(--gold);
+    font-weight: bold; letter-spacing: 5px;
+}
 
 .hidden { display: none !important; }
