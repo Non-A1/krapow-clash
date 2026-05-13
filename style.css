@@ -1,83 +1,85 @@
 :root {
     --gold: #D4AF37;
-    --noir: #0a0a0a;
+    --noir: #050505; /* True black for OLED/S25 Ultra */
     --glass: rgba(255, 255, 255, 0.05);
-    --alert: #ff3c3c;
 }
+
+* { box-sizing: border-box; }
 
 body {
     margin: 0; background: var(--noir);
     font-family: 'Courier New', Courier, monospace;
-    color: #eee; overflow: hidden;
+    color: #eee; min-height: 100vh;
+    display: flex; align-items: center; justify-content: center;
 }
 
-/* Background Texture */
-.street-food-noir::before {
-    content: ""; position: fixed; width: 100%; height: 100%;
-    background: url('https://images.unsplash.com/photo-1542124113-bc752317303c?q=80&w=2070') center/cover;
-    opacity: 0.2; filter: grayscale(100%); z-index: -1;
-}
-
+/* Responsive Container */
 .tactical-hud {
-    padding: 20px; height: 95vh;
-    display: flex; flex-direction: column; gap: 20px;
+    width: 100%; max-width: 1200px; padding: 20px;
+    display: flex; flex-direction: column; gap: 15px;
 }
 
-/* Glassmorphism Cards */
-.glass-card {
-    background: var(--glass);
-    backdrop-filter: blur(15px);
-    border: 1px solid rgba(212, 175, 55, 0.2);
-    padding: 15px; border-radius: 4px;
-    margin-bottom: 10px;
+.hud-header h1 {
+    font-size: clamp(1.2rem, 5vw, 2.5rem);
+    color: var(--gold); border-bottom: 1px solid var(--gold);
+    margin: 10px 0; letter-spacing: 4px;
 }
 
-.card-label { font-size: 0.7rem; color: var(--gold); margin-bottom: 10px; letter-spacing: 2px; }
+.system-stats { font-size: 0.65rem; color: var(--gold); display: flex; gap: 20px; }
 
-/* Grid Layouts */
-.hud-main { display: flex; flex-direction: column; gap: 20px; }
-@media (min-width: 768px) { .hud-main { flex-direction: row; } .vision-module, .control-module { flex: 1; } }
+/* Grid Adaptability */
+.hud-main { display: flex; flex-direction: column; gap: 15px; }
+@media (min-width: 1024px) { .hud-main { flex-direction: row; align-items: flex-start; } }
 
-/* Vision System */
+.vision-module { flex: 1.5; }
+.control-module { flex: 1; }
+
+/* Vision Panel */
 .camera-lens {
     width: 100%; aspect-ratio: 16/9; background: #000;
-    border: 1px solid var(--gold); position: relative;
+    border: 1px solid var(--gold); position: relative; overflow: hidden;
 }
 
 .hud-overlay-grid {
-    position: absolute; width: 100%; height: 100%;
-    background-image: linear-gradient(rgba(212,175,55,0.1) 1px, transparent 1px),
-                      linear-gradient(90deg, rgba(212,175,55,0.1) 1px, transparent 1px);
-    background-size: 40px 40px; pointer-events: none;
+    position: absolute; inset: 0;
+    background-image: linear-gradient(rgba(212,175,55,0.05) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(212,175,55,0.05) 1px, transparent 1px);
+    background-size: 5% 5%; pointer-events: none;
 }
 
-/* Buttons */
-.grid-4 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+/* Glassmorphism Selection Cards */
+.glass-card {
+    background: var(--glass); backdrop-filter: blur(10px);
+    border: 1px solid rgba(212, 175, 55, 0.1);
+    padding: 12px; margin-bottom: 10px; border-radius: 2px;
+}
+
+.card-label { font-size: 0.6rem; color: var(--gold); margin-bottom: 8px; opacity: 0.8; }
+
+.grid-4 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+
 button {
-    background: transparent; border: 1px solid #444; color: #888;
-    padding: 10px; font-size: 0.7rem; cursor: pointer; transition: 0.3s;
-}
-button.active { border-color: var(--gold); color: var(--gold); background: rgba(212, 175, 55, 0.1); }
-
-/* Plasma Flame */
-.thermal-slider { position: relative; padding-top: 30px; }
-.plasma-flame {
-    position: absolute; top: 0; left: 50%; width: 20px; height: 25px;
-    background: linear-gradient(to top, var(--alert), var(--gold), transparent);
-    border-radius: 50% 50% 20% 20%; filter: blur(1px);
-    animation: flicker 0.1s infinite alternate;
+    background: transparent; border: 1px solid #333; color: #666;
+    padding: 10px 5px; font-size: 0.7rem; cursor: pointer; transition: 0.2s;
+    font-family: inherit;
 }
 
-@keyframes flicker { from { opacity: 0.8; } to { opacity: 1; transform: translateY(-2px); } }
+button.active { border-color: var(--gold); color: var(--gold); background: rgba(212, 175, 55, 0.05); }
 
-.slider { -webkit-appearance: none; width: 100%; background: #222; height: 4px; }
-.slider::-webkit-slider-thumb { -webkit-appearance: none; width: 15px; height: 15px; background: var(--gold); border-radius: 50%; cursor: pointer; }
-
-/* Ignition Button */
+/* The Action Button */
 .ignite-btn {
     width: 100%; padding: 20px; background: transparent;
     border: 1px solid var(--gold); color: var(--gold);
-    font-weight: bold; letter-spacing: 5px;
+    font-weight: bold; letter-spacing: 5px; cursor: pointer;
+    margin-top: 10px;
 }
 
+.ignite-btn:hover { background: rgba(212, 175, 55, 0.1); }
+
+/* Animation Overlays */
+.chef-ai { width: 150px; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); }
+.plate-render { width: 200px; filter: drop-shadow(0 0 20px var(--gold)); }
+
 .hidden { display: none !important; }
+.pulse { animation: p 2s infinite; }
+@keyframes p { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
