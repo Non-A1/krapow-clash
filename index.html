@@ -3,20 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Krapow-Clash | Royal Thai AI HUD</title>
+    <title>Krapow-Clash | Bamboo Hut AI HUD</title>
     <!-- AI LIBRARIES -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/handpose"></script>
     <script src="https://cdn.jsdelivr.net/npm/fingerpose@0.3.0/dist/fingerpose.min.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
-<body class="thai-theme">
+<body class="bamboo-theme">
     <div class="hud-container">
         <header>
             <div class="status-bar">
                 <span class="pulse">● SAWASDEE</span>
                 <span id="temp-display">WOK: 185°C</span>
-                <span id="audio-status">STREET SYNC: ON</span>
+                <span id="audio-status">LO-FI: ACTIVE</span>
             </div>
             <h1>KRAPOW-CLASH <span class="gold-text">กะเพรา</span></h1>
         </header>
@@ -26,37 +26,35 @@
             <section class="vision-panel">
                 <div class="camera-feed thai-border">
                     <div id="chef-stage" class="hidden">
-                        <img src="images/thai-chef.png" alt="Chef" class="chef-sprite">
-                        <div class="wok-animation">
-                            <div class="steam"></div>
-                            <div class="flame"></div>
+                        <div class="chef-container">
+                            <img src="images/thai-chef.png" alt="Chef" class="chef-sprite">
+                            <div class="cooking-fx">
+                                <div class="steam-particle"></div>
+                                <div class="fire-base"></div>
+                            </div>
                         </div>
                     </div>
                     <div class="scanner-overlay"></div>
                     <p class="feed-label">AI VISION ACTIVE</p>
                 </div>
-                <div class="sensor-readouts">
-                    <div class="sensor">
-                        <label>LACE CRISP %</label>
-                        <div class="progress-bar"><div class="fill" style="width: 65%;"></div></div>
-                    </div>
-                </div>
             </section>
 
             <!-- Right Panel: Interactive Controls -->
             <section class="control-panel">
+                <!-- 01. Proteins -->
                 <div class="menu-card protein-card">
                     <h3><span class="thai-num">๑</span> PROTEIN</h3>
-                    <div class="btn-grid" data-group="protein">
+                    <div class="btn-grid">
                         <button class="active"><img src="images/pork.png" alt="" class="food-icon">PORK</button>
                         <button><img src="images/chicken.png" alt="" class="food-icon">CHICKEN</button>
                         <button><img src="images/beef.png" alt="" class="food-icon">BEEF</button>
                     </div>
                 </div>
 
+                <!-- 02. Sides -->
                 <div class="menu-card side-card">
                     <h3><span class="thai-num">๒</span> SIDES</h3>
-                    <div class="btn-grid" data-group="side">
+                    <div class="btn-grid">
                         <button><img src="images/white-rice.png" alt="" class="food-icon">WHITE RICE</button>
                         <button><img src="images/brown-rice.png" alt="" class="food-icon">BROWN RICE</button>
                         <button><img src="images/puree.png" alt="" class="food-icon">PUREE</button>
@@ -64,9 +62,10 @@
                     </div>
                 </div>
 
+                <!-- 03. Veggies -->
                 <div class="menu-card veggie-card">
                     <h3><span class="thai-num">๓</span> VEGGIES</h3>
-                    <div class="btn-grid" data-group="veggie">
+                    <div class="btn-grid">
                         <button><img src="images/tofu.png" alt="" class="food-icon">TOFU</button>
                         <button><img src="images/lettuce.png" alt="" class="food-icon">LETTUCE</button>
                         <button><img src="images/spinach.png" alt="" class="food-icon">SPINACH</button>
@@ -74,12 +73,16 @@
                     </div>
                 </div>
 
+                <!-- 04. Chili Level -->
                 <div class="menu-card spice-card">
                     <h3><span class="thai-num">๔</span> CHILI LEVEL</h3>
-                    <input type="range" min="1" max="10" value="7" class="slider">
+                    <div class="flame-zone">
+                        <div id="slider-flame" class="chili-flame"></div>
+                    </div>
+                    <input type="range" min="1" max="10" value="5" class="slider" id="chili-slider">
                 </div>
 
-                <button class="launch-btn thai-btn">INITIALIZE COOK</button>
+                <button class="launch-btn thai-btn" id="launch-btn">INITIALIZE COOK</button>
             </section>
         </main>
     </div>
@@ -87,12 +90,22 @@
     <video id="video" playsinline style="display: none;"></video>
 
     <script>
-        const launchBtn = document.querySelector('.launch-btn');
-        const video = document.querySelector("#video");
-        const chefStage = document.querySelector("#chef-stage");
+        const launchBtn = document.getElementById('launch-btn');
+        const video = document.getElementById("video");
+        const chefStage = document.getElementById("chef-stage");
         const scannerOverlay = document.querySelector(".scanner-overlay");
+        const chiliSlider = document.getElementById("chili-slider");
+        const sliderFlame = document.getElementById("slider-flame");
 
-        // Handle Button Clicks & Animations
+        // Flame Logic
+        chiliSlider.addEventListener('input', (e) => {
+            const val = e.target.value;
+            const scale = 0.5 + (val * 0.3);
+            sliderFlame.style.transform = `scale(${scale})`;
+            sliderFlame.style.boxShadow = `0 0 ${val * 4}px #ff4500`;
+        });
+
+        // Button Group Selection Logic
         document.querySelectorAll('.btn-grid button').forEach(btn => {
             btn.addEventListener('click', () => {
                 btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('active'));
@@ -100,20 +113,16 @@
             });
         });
 
-        // Setup AI Camera
+        // AI Setup
         async function setupCamera() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
-                video.srcObject = stream;
-                return new Promise((resolve) => video.onloadedmetadata = () => resolve(video));
-            } catch (e) { console.error("Camera error", e); }
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+            video.srcObject = stream;
+            return new Promise((resolve) => video.onloadedmetadata = () => resolve(video));
         }
 
-        // Run Hand Tracking & Detection
         async function runAI() {
             const model = await handpose.load();
             const GE = new fp.GestureEstimator([fp.Gestures.ThumbsUpGesture]);
-
             async function detect() {
                 const predictions = await model.estimateHands(video);
                 if (predictions.length > 0) {
@@ -131,15 +140,12 @@
         launchBtn.addEventListener('click', () => {
             scannerOverlay.classList.add('hidden');
             chefStage.classList.remove('hidden');
-            launchBtn.innerText = "CHEF IS COOKING...";
-            launchBtn.classList.add('cooking');
-
+            launchBtn.innerText = "Sizzling...";
             setTimeout(() => {
                 chefStage.classList.add('hidden');
                 scannerOverlay.classList.remove('hidden');
-                launchBtn.innerText = "DISH READY!";
-                launchBtn.classList.remove('cooking');
-            }, 5000);
+                launchBtn.innerText = "INITIALIZE COOK";
+            }, 6000);
         });
 
         setupCamera().then(runAI);
