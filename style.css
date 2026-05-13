@@ -1,7 +1,7 @@
 :root {
     --thai-gold: #D4AF37;
     --thai-maroon: #4A0E0E;
-    --thai-black-glass: rgba(20, 20, 20, 0.88);
+    --thai-black-glass: rgba(20, 20, 20, 0.9);
 }
 
 body, html {
@@ -19,86 +19,53 @@ body, html {
     background: var(--thai-black-glass);
     backdrop-filter: blur(10px);
     border: 3px double var(--thai-gold);
-    margin: 10px;
-    padding: 15px;
-    border-radius: 15px;
-    min-height: 96vh;
-    box-shadow: inset 0 0 50px #000;
+    margin: 10px; padding: 15px; border-radius: 15px;
+    min-height: 96vh; box-shadow: inset 0 0 50px #000;
 }
 
 header h1 { color: var(--thai-gold); text-align: center; border-bottom: 2px solid var(--thai-gold); margin-bottom: 15px; }
 
-/* Grid & Panels */
+/* LAYOUT */
 .main-layout { display: flex; flex-direction: column; gap: 15px; }
 @media (min-width: 768px) { .main-layout { flex-direction: row; } .vision-panel, .control-panel { flex: 1; } }
 
-/* Camera & Chef Narrative */
+/* CHEF & VISION */
 .camera-feed {
-    width: 100%; aspect-ratio: 4/3;
-    background: #000; border: 3px double var(--thai-gold);
+    width: 100%; aspect-ratio: 4/3; background: #000; border: 3px double var(--thai-gold);
     position: relative; overflow: hidden;
 }
 
-.chef-sprite {
-    width: 150px; position: absolute; bottom: 0; left: 50%;
-    transform: translateX(-50%);
-    animation: toss 0.4s infinite alternate ease-in-out;
-}
-
+.chef-sprite { width: 150px; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); animation: toss 0.4s infinite alternate ease-in-out; }
 @keyframes toss { from { transform: translateX(-50%) rotate(-2deg); } to { transform: translateX(-50%) translateY(-5px) rotate(2deg); } }
 
-/* Ingredient Dropping */
-.ingredient-anim {
-    position: absolute; width: 40px; height: 40px;
-    background-size: contain; background-repeat: no-repeat;
-    left: 50%; margin-left: -20px; top: 10%;
-    animation: drop-down 0.8s ease-in forwards;
-}
-
+/* INGREDIENT DROP & PLATE */
+.ingredient-anim { position: absolute; width: 40px; height: 40px; background-size: contain; background-repeat: no-repeat; left: 50%; margin-left: -20px; top: 10%; animation: drop-down 0.8s ease-in forwards; }
 @keyframes drop-down { 0% { transform: translateY(0) scale(0.5); opacity: 0; } 50% { opacity: 1; } 100% { transform: translateY(180px) scale(1.2); opacity: 0; } }
 
-/* Plate Serving */
-#final-plate {
-    position: absolute; top: 15%; left: 50%; transform: translateX(-50%);
-    z-index: 20; text-align: center;
-    animation: serve 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-}
-
+#final-plate { position: absolute; top: 15%; left: 50%; transform: translateX(-50%); z-index: 20; text-align: center; animation: serve 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
 @keyframes serve { 0% { transform: translate(-50%, 20px) scale(0); opacity: 0; } 100% { transform: translate(-50%, 0) scale(1); opacity: 1; } }
-
 .plate-img { width: 160px; filter: drop-shadow(0 0 15px var(--thai-gold)); }
-.serve-text { color: var(--thai-gold); font-weight: bold; font-size: 1.2rem; margin-top: 5px; }
+.serve-text { color: var(--thai-gold); font-weight: bold; font-size: 1.2rem; }
 
-/* Menu Cards */
-.menu-card {
-    background: linear-gradient(135deg, rgba(74, 14, 14, 0.8), rgba(20, 20, 20, 0.9));
-    border-left: 5px solid var(--thai-gold);
-    padding: 10px; margin-bottom: 10px; border-radius: 0 10px 10px 0;
-}
-
+/* CARDS & BUTTONS */
+.menu-card { background: linear-gradient(135deg, rgba(74, 14, 14, 0.8), rgba(20, 20, 20, 0.9)); border-left: 5px solid var(--thai-gold); padding: 10px; margin-bottom: 10px; border-radius: 0 10px 10px 0; }
 .btn-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
-.btn-grid button {
-    background: rgba(255,255,255,0.05); border: 1px solid #444; color: #ccc;
-    font-size: 0.6rem; padding: 10px 2px; display: flex; flex-direction: column; align-items: center;
-}
-
+.btn-grid button { background: rgba(255,255,255,0.05); border: 1px solid #444; color: #ccc; font-size: 0.6rem; padding: 10px 2px; display: flex; flex-direction: column; align-items: center; }
 .btn-grid button.active { background: var(--thai-gold); color: black; box-shadow: 0 0 8px var(--thai-gold); }
 .food-icon { width: 22px; height: 22px; filter: invert(1); margin-bottom: 3px; }
 
-/* Chili Flame */
-.flame-zone { height: 40px; display: flex; justify-content: center; align-items: flex-end; }
+/* DYNAMIC FLAME ON SLIDER */
+.slider-container { position: relative; padding-top: 40px; margin-bottom: 10px; }
 .chili-flame {
-    width: 15px; height: 15px;
+    position: absolute; top: 0; left: 50%; width: 20px; height: 25px;
     background: linear-gradient(to top, #ff4500, #ff8c00, transparent);
-    border-radius: 50% 50% 20% 20%;
-    animation: flicker 0.1s infinite alternate;
+    border-radius: 50% 50% 20% 20%; filter: blur(1px);
+    animation: flicker 0.1s infinite alternate; pointer-events: none;
 }
-@keyframes flicker { from { opacity: 0.8; } to { opacity: 1; } }
+@keyframes flicker { from { opacity: 0.8; transform: scaleX(1); } to { opacity: 1; transform: scaleX(1.1) translateY(-2px); } }
 
-.launch-btn {
-    width: 100%; padding: 18px;
-    background: linear-gradient(to right, #8b0000, var(--thai-maroon));
-    border: 2px solid var(--thai-gold); color: var(--thai-gold); font-weight: bold; cursor: pointer;
-}
+.slider { -webkit-appearance: none; width: 100%; background: #333; height: 10px; border-radius: 5px; outline: none; }
+.slider::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; background: var(--thai-gold); border-radius: 50%; cursor: pointer; border: 2px solid #fff; }
 
+.launch-btn { width: 100%; padding: 18px; background: linear-gradient(to right, #8b0000, var(--thai-maroon)); border: 2px solid var(--thai-gold); color: var(--thai-gold); font-weight: bold; cursor: pointer; }
 .hidden { display: none !important; }
