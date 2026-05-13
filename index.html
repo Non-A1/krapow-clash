@@ -20,11 +20,12 @@
             <!-- VISION PANEL -->
             <section class="vision-module">
                 <div class="camera-lens">
-                    <div id="debug-log">TOUCH_TO_BOOT</div>
+                    <div id="debug-log">SYSTEM_READY // CLICK_TO_BOOT</div>
                     <div id="chef-stage" class="hidden">
                         <div class="kitchen-environment">
                             <img src="images/thai-chef.png" alt="Chef" class="chef-ai" id="chef-img">
                             <div id="final-plate" class="hidden">
+                                <!-- The Dynamic Dish Icon -->
                                 <img src="images/krapow-plate.png" alt="Serve" class="plate-render" id="dynamic-dish">
                                 <div class="serve-alert">MISSION_COMPLETE: ENJOY</div>
                             </div>
@@ -88,7 +89,7 @@
 
         let isBooted = false;
 
-        // Selection Logic
+        // UI Logic: Tactical Selection
         document.querySelectorAll('.grid-4 button').forEach(btn => {
             btn.addEventListener('click', () => {
                 btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('active'));
@@ -96,11 +97,12 @@
             });
         });
 
+        // AI Boot Sequence
         async function bootSystem() {
             try {
-                debugLog.innerText = "ACCESSING_CAMERA...";
+                debugLog.innerText = "ACCESSING_LENS...";
                 const stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } } 
+                    video: { facingMode: "user" } 
                 });
                 video.srcObject = stream;
                 await video.play();
@@ -130,17 +132,22 @@
                 }
                 loop();
             } catch (err) { 
-                debugLog.innerText = "SYS_ERR: " + err.message;
-                console.error(err);
+                debugLog.innerText = "BOOT_ERR: " + err.message;
             }
         }
 
+        // Ignition Sequence with Image Pathing Fix
         async function triggerCook() {
             launchBtn.disabled = true;
-            const p = document.querySelector('[data-category="protein"] .active').id;
-            const s = document.querySelector('[data-category="side"] .active').id;
-            const v = document.querySelector('[data-category="veggie"] .active').id;
+            
+            // Construct filename from button IDs
+            const p = document.querySelector('[data-category="protein"] .active').id.toLowerCase();
+            const s = document.querySelector('[data-category="side"] .active').id.toLowerCase().replace(" ", "-");
+            const v = document.querySelector('[data-category="veggie"] .active').id.toLowerCase();
             const dishID = `${p}-${s}-${v}.png`;
+
+            // IT Debug: Log attempt to console (F12 to view)
+            console.log("System attempting to fetch: images/finished/" + dishID);
 
             document.querySelector('.hud-overlay-grid').style.opacity = '0';
             chefStage.classList.remove('hidden');
@@ -149,8 +156,15 @@
             chefImg.style.animationDuration = '0.1s';
 
             setTimeout(() => {
-                dynamicDish.src = `images/finished/${dishID}`;
-                dynamicDish.onerror = () => { dynamicDish.src = 'images/krapow-plate.png'; };
+                // Set the dynamic source
+                dynamicDish.src = "images/finished/" + dishID;
+                
+                // Fallback for missing assets
+                dynamicDish.onerror = () => { 
+                    console.error("Path error: Asset not found at images/finished/" + dishID);
+                    dynamicDish.src = "images/krapow-plate.png"; 
+                };
+
                 plate.classList.remove('hidden');
                 launchBtn.innerText = "COMPLETED";
 
@@ -161,16 +175,13 @@
                     launchBtn.innerText = "INITIALIZE_IGNITION";
                     launchBtn.disabled = false;
                     chefImg.style.animation = '';
-                }, 4000);
+                }, 4500);
             }, 3000);
         }
 
         launchBtn.addEventListener('click', () => {
-            if (!isBooted) {
-                bootSystem();
-            } else {
-                triggerCook();
-            }
+            if (!isBooted) bootSystem();
+            else triggerCook();
         });
     </script>
 </body>
