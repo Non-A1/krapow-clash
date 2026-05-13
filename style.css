@@ -1,93 +1,79 @@
 :root {
-    --neon-green: #39FF14;
-    --neon-blue: #00F3FF;
-    --dark-bg: #0a0a0c;
-    --card-bg: #16161a;
+    --thai-gold: #D4AF37;
+    --thai-maroon: #4A0E0E;
+    --thai-black: #1A1A1A;
+    --neon-blue: #00F3FF; /* Keeping blue for technical feedback */
 }
 
 body, html {
-    background-color: var(--dark-bg);
-    color: white;
-    font-family: 'Segoe UI', sans-serif;
-    margin: 0;
-    padding: 0;
-    height: 100%;
+    background-color: var(--thai-black);
+    background-image: radial-gradient(circle, #2a0a0a 1px, transparent 1px);
+    background-size: 30px 30px; /* Subtle pattern */
+    color: #f1f1f1;
+    font-family: 'Georgia', serif; /* More traditional feel */
 }
 
 .hud-container {
-    display: flex;
-    flex-direction: column;
     padding: 15px;
-    min-height: 100vh;
+    border: 2px solid var(--thai-gold);
+    margin: 5px;
+    min-height: 98vh;
 }
 
-/* Header Adjustments */
-header h1 { font-size: 1.5rem; margin: 10px 0; border-bottom: 1px solid var(--neon-blue); }
-.status-bar { display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--neon-blue); }
-
-/* MAIN LAYOUT: Vertical for Mobile, Horizontal for Desktop */
-.main-layout {
-    display: flex;
-    flex-direction: column; /* Mobile stack */
-    gap: 20px;
+header h1 {
+    color: var(--thai-gold);
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    border-bottom: 2px solid var(--thai-gold);
+    padding-bottom: 10px;
 }
 
+.gold-text { font-family: sans-serif; opacity: 0.8; margin-left: 10px; }
+
+/* Thai Borders & Numbers */
+.thai-border { border: 3px double var(--thai-gold); padding: 5px; }
+.thai-num { color: var(--thai-gold); font-weight: bold; margin-right: 5px; }
+
+/* Menu Cards - Silk Feel */
+.menu-card {
+    background: linear-gradient(135deg, #222 0%, #111 100%);
+    border: 1px solid #444;
+    border-left: 5px solid var(--thai-gold);
+    padding: 12px;
+    margin-bottom: 15px;
+    border-radius: 0 10px 10px 0;
+}
+
+/* User Friendly Buttons */
+.btn-grid button {
+    background: rgba(212, 175, 55, 0.05);
+    border: 1px solid #444;
+    color: #ccc;
+    padding: 12px 5px;
+    transition: 0.3s;
+    border-radius: 5px;
+    font-size: 0.7rem;
+}
+
+.btn-grid button.active {
+    background: var(--thai-gold);
+    color: black;
+    border-color: #fff;
+    box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
+}
+
+.launch-btn.thai-btn {
+    background: linear-gradient(to right, #8b0000, var(--thai-maroon));
+    border: 2px solid var(--thai-gold);
+    color: var(--thai-gold);
+    font-size: 1.2rem;
+    letter-spacing: 2px;
+    text-shadow: 1px 1px #000;
+}
+
+/* Mobile Responsiveness */
 @media (min-width: 768px) {
-    .main-layout {
-        flex-direction: row; /* Desktop side-by-side */
-    }
+    .main-layout { display: flex; flex-direction: row; gap: 30px; }
     .vision-panel, .control-panel { flex: 1; }
 }
-
-/* Vision Panel */
-.camera-feed {
-    width: 100%;
-    aspect-ratio: 4/3;
-    background: #222;
-    border: 2px solid #444;
-    position: relative;
-    border-radius: 8px;
-}
-
-/* Control Cards */
-.menu-card {
-    background: var(--card-bg);
-    padding: 12px;
-    margin-bottom: 10px;
-    border-left: 3px solid var(--neon-blue);
-}
-
-.veggie-card { border-left-color: var(--neon-green); }
-
-.btn-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr); /* 3 columns on mobile */
-    gap: 8px;
-}
-
-.btn-grid button {
-    background: transparent;
-    border: 1px solid var(--neon-blue);
-    color: white;
-    padding: 10px 2px;
-    font-size: 0.6rem;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-.protein-icon { width: 20px; height: 20px; margin-bottom: 5px; filter: invert(1); }
-
-.launch-btn {
-    width: 100%;
-    padding: 18px;
-    background: var(--neon-green);
-    border: none;
-    font-weight: bold;
-    margin-top: 10px;
-}
-
-/* Footer Anim */
-.waveform { display: flex; gap: 3px; justify-content: center; margin-top: 10px; }
-.waveform span { width: 3px; height: 10px; background: var(--neon-blue); animation: bounce 0.5s infinite alternate; }
-@keyframes bounce { from { height: 5px; } to { height: 20px; } }
