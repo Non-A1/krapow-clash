@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Krapow-Clash | Bamboo Hut AI HUD</title>
-    <!-- LIBS -->
+    <!-- LIBS: Versions locked for stability -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.11.0/dist/tf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/handpose@0.0.7/dist/handpose.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/fingerpose@0.3.0/dist/fingerpose.min.js"></script>
@@ -14,7 +14,7 @@
     <div class="hud-container">
         <header>
             <div class="status-bar">
-                <span class="pulse">● SAWASDEE</span>
+                <span>● SAWASDEE</span>
                 <span id="ai-status">AI: LOADING...</span>
             </div>
             <h1>KRAPOW-CLASH <span class="gold-text">กะเพรา</span></h1>
@@ -23,17 +23,22 @@
         <main class="main-layout">
             <section class="vision-panel">
                 <div class="camera-feed thai-border">
-                    <!-- DEBUG HUD: Shows what AI sees -->
+                    <!-- Debug HUD for Desktop Troubleshooting -->
                     <div id="debug-log">Ready...</div>
                     
                     <div id="chef-stage" class="hidden">
                         <div class="chef-container">
                             <img src="images/thai-chef.png" alt="Chef" class="chef-sprite" id="chef-img">
+                            
+                            <!-- Ingredient Throwing Animation Hook -->
                             <div id="ingredient-drop" class="hidden"></div>
+                            
+                            <!-- Presentation Plate -->
                             <div id="final-plate" class="hidden">
                                 <img src="images/krapow-plate.png" alt="Finished Dish" class="plate-img">
                                 <p class="serve-text">อร่อย! (ENJOY!)</p>
                             </div>
+
                             <div class="cooking-fx"><div class="steam-particle"></div></div>
                         </div>
                     </div>
@@ -42,33 +47,30 @@
             </section>
 
             <section class="control-panel">
-                <!-- Proteins Group -->
-                <div class="menu-card">
+                <!-- Ingredients Groups (Grouped for Logic) -->
+                <div class="menu-card" data-category="protein">
                     <h3>๑. PROTEIN</h3>
-                    <div class="btn-grid" data-group="protein">
+                    <div class="btn-grid">
                         <button class="active"><img src="images/pork.png" alt="" class="food-icon">PORK</button>
                         <button><img src="images/chicken.png" alt="" class="food-icon">CHICKEN</button>
                         <button><img src="images/beef.png" alt="" class="food-icon">BEEF</button>
                     </div>
                 </div>
-                <!-- Sides Group -->
-                <div class="menu-card">
+                <div class="menu-card" data-category="side">
                     <h3>๒. SIDES</h3>
-                    <div class="btn-grid" data-group="side">
+                    <div class="btn-grid">
                         <button class="active"><img src="images/white-rice.png" alt="" class="food-icon">WHITE RICE</button>
                         <button><img src="images/brown-rice.png" alt="" class="food-icon">BROWN RICE</button>
-                        <button><img src="images/puree.png" alt="" class="food-icon">PUREE</button>
                     </div>
                 </div>
-                <!-- Veg Group -->
-                <div class="menu-card">
+                <div class="menu-card" data-category="veggie">
                     <h3>๓. VEGGIES</h3>
-                    <div class="btn-grid" data-group="veggie">
+                    <div class="btn-grid">
                         <button class="active"><img src="images/tofu.png" alt="" class="food-icon">TOFU</button>
-                        <button><img src="images/lettuce.png" alt="" class="food-icon">LETTUCE</button>
+                        <button><img src="images/spinach.png" alt="" class="food-icon">SPINACH</button>
                     </div>
                 </div>
-                <!-- Spice Slider -->
+
                 <div class="menu-card">
                     <h3>๔. CHILI LEVEL</h3>
                     <div class="slider-container">
@@ -86,74 +88,57 @@
     <script>
         const launchBtn = document.getElementById('launch-btn');
         const video = document.getElementById("video");
-        const aiStatus = document.getElementById("ai-status");
         const debugLog = document.getElementById("debug-log");
         const chefStage = document.getElementById("chef-stage");
-        const plate = document.getElementById('final-plate');
         const dropZone = document.getElementById('ingredient-drop');
+        const plate = document.getElementById('final-plate');
+        const chefImg = document.getElementById('chef-img');
 
-        // 1. Camera Setup
-        async function startCamera() {
+        // Logic: Button Selection
+        document.querySelectorAll('.btn-grid button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            });
+        });
+
+        // Logic: Camera & AI Initialization
+        async function initApp() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true });
                 video.srcObject = stream;
                 await video.play();
-                debugLog.innerText = "Camera: Active";
-            } catch (err) {
-                debugLog.innerText = "Camera Error: " + err.message;
-            }
-        }
-
-        // 2. AI Implementation
-        async function initAI() {
-            aiStatus.innerText = "AI: LOADING MODEL...";
-            const model = await handpose.load();
-            aiStatus.innerText = "AI: READY";
-            
-            // Critical Fix: Explicitly checking library load
-            const fpLib = window.fp || window.fingerpose;
-            if (!fpLib) {
-                debugLog.innerText = "Error: Fingerpose Lib missing";
-                return;
-            }
-
-            const GE = new fpLib.GestureEstimator([fpLib.Gestures.ThumbsUpGesture]);
-
-            async function frameLoop() {
-                const predictions = await model.estimateHands(video);
                 
-                if (predictions.length > 0) {
-                    debugLog.innerText = "Hand Detected";
-                    const gesture = await GE.estimate(predictions[0].landmarks, 7.5);
-                    
-                    if (gesture.gestures.length > 0) {
-                        const result = gesture.gestures.sort((a,b) => b.confidence - a.confidence)[0];
-                        debugLog.innerText = `Detected: ${result.name} (${Math.round(result.confidence)}%)`;
-                        
-                        if (result.name === 'thumbs_up' && !launchBtn.disabled) {
-                            launchBtn.click();
+                const model = await handpose.load();
+                const fpLib = window.fp || window.fingerpose; // Corrected dependency check
+                const GE = new fpLib.GestureEstimator([fpLib.Gestures.ThumbsUpGesture]);
+                
+                document.getElementById('ai-status').innerText = "AI: ACTIVE";
+
+                async function detect() {
+                    const predictions = await model.estimateHands(video);
+                    if (predictions.length > 0) {
+                        const gesture = await GE.estimate(predictions[0].landmarks, 7.5);
+                        if (gesture.gestures.length > 0) {
+                            const result = gesture.gestures.sort((a,b) => b.confidence - a.confidence)[0];
+                            if (result.name === 'thumbs_up' && !launchBtn.disabled) launchBtn.click();
                         }
                     }
-                } else {
-                    debugLog.innerText = "No hand in view";
+                    requestAnimationFrame(detect);
                 }
-                requestAnimationFrame(frameLoop);
-            }
-            frameLoop();
+                detect();
+            } catch (err) { debugLog.innerText = "Error: " + err.message; }
         }
 
-        // 3. Narrative Sequence
+        // Narrative Sequence: Drop -> Sizzle -> Serve
         launchBtn.addEventListener('click', async () => {
             launchBtn.disabled = true;
-            const ingredients = [
-                document.querySelector('[data-group="protein"] .active img')?.src,
-                document.querySelector('[data-group="side"] .active img')?.src,
-                document.querySelector('[data-group="veggie"] .active img')?.src
-            ].filter(Boolean);
-
+            const ingredients = Array.from(document.querySelectorAll('.btn-grid button.active img')).map(img => img.src);
+            
             document.querySelector('.scanner-overlay').classList.add('hidden');
             chefStage.classList.remove('hidden');
 
+            // 1. Ingredients Throwing Phase
             for (const src of ingredients) {
                 await new Promise(res => {
                     dropZone.style.backgroundImage = `url('${src}')`;
@@ -163,32 +148,28 @@
                 });
             }
 
-            launchBtn.innerText = "COOKING...";
+            // 2. Cooking Phase
+            launchBtn.innerText = "SIZZLING...";
+            chefImg.style.animationDuration = '0.15s'; // Fast wok tossing
+
             setTimeout(() => {
+                // 3. Presentation Phase
+                chefImg.style.animation = 'none';
                 plate.classList.remove('hidden');
                 launchBtn.innerText = "SERVED!";
+
                 setTimeout(() => {
                     chefStage.classList.add('hidden');
                     plate.classList.add('hidden');
                     document.querySelector('.scanner-overlay').classList.remove('hidden');
                     launchBtn.innerText = "INITIALIZE COOK";
                     launchBtn.disabled = false;
+                    chefImg.style.animation = '';
                 }, 4000);
             }, 2000);
         });
 
-        // Initialize
-        startCamera().then(initAI);
-
-        // Flame Positioning
-        const chiliSlider = document.getElementById("chili-slider");
-        const sliderFlame = document.getElementById("slider-flame");
-        chiliSlider.addEventListener('input', () => {
-            const val = chiliSlider.value;
-            const percent = (val - 1) / 9;
-            sliderFlame.style.left = `calc(${percent * 100}% - 10px)`;
-            sliderFlame.style.transform = `scale(${0.6 + (val * 0.25)})`;
-        });
+        initApp();
     </script>
 </body>
 </html>
