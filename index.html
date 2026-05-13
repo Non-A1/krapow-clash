@@ -22,22 +22,16 @@
         </header>
 
         <main class="main-layout">
-            <!-- Left Panel: AI Vision & Chef Narrative Stage -->
             <section class="vision-panel">
                 <div class="camera-feed thai-border">
                     <div id="chef-stage" class="hidden">
                         <div class="chef-container">
                             <img src="images/thai-chef.png" alt="Chef" class="chef-sprite" id="chef-img">
-                            
-                            <!-- Falling Ingredient Hook -->
                             <div id="ingredient-drop" class="hidden"></div>
-                            
-                            <!-- Final Served Plate -->
                             <div id="final-plate" class="hidden">
                                 <img src="images/krapow-plate.png" alt="Finished Dish" class="plate-img">
                                 <p class="serve-text">อร่อย! (ENJOY!)</p>
                             </div>
-
                             <div class="cooking-fx">
                                 <div class="steam-particle"></div>
                                 <div class="fire-base"></div>
@@ -49,7 +43,6 @@
                 </div>
             </section>
 
-            <!-- Right Panel: Interactive Controls -->
             <section class="control-panel">
                 <div class="menu-card protein-card">
                     <h3><span class="thai-num">๑</span> PROTEIN</h3>
@@ -82,10 +75,10 @@
 
                 <div class="menu-card spice-card">
                     <h3><span class="thai-num">๔</span> CHILI LEVEL</h3>
-                    <div class="flame-zone">
+                    <div class="slider-container">
                         <div id="slider-flame" class="chili-flame"></div>
+                        <input type="range" min="1" max="10" value="5" class="slider" id="chili-slider">
                     </div>
-                    <input type="range" min="1" max="10" value="5" class="slider" id="chili-slider">
                 </div>
 
                 <button class="launch-btn thai-btn" id="launch-btn">INITIALIZE COOK</button>
@@ -106,15 +99,34 @@
         const plate = document.getElementById('final-plate');
         const chefImg = document.getElementById('chef-img');
 
-        // Flame Animation Logic
-        chiliSlider.addEventListener('input', (e) => {
-            const val = e.target.value;
-            const scale = 0.5 + (val * 0.3);
+        // FIXED FLAME POSITIONING LOGIC
+        function updateFlame() {
+            const val = chiliSlider.value;
+            const min = chiliSlider.min;
+            const max = chiliSlider.max;
+            
+            // Calculate percentage across the slider
+            const percent = (val - min) / (max - min);
+            
+            // Apply horizontal offset based on slider width
+            const offset = percent * 100;
+            sliderFlame.style.left = `calc(${offset}% - 10px)`; // -10px centers the flame
+            
+            // Scale and intensity
+            const scale = 0.6 + (val * 0.25);
             sliderFlame.style.transform = `scale(${scale})`;
-            sliderFlame.style.boxShadow = `0 0 ${val * 5}px #ff4500`;
-        });
+            sliderFlame.style.boxShadow = `0 0 ${val * 6}px #ff4500`;
+            
+            // Change color for Nuclear levels
+            sliderFlame.style.background = val > 8 
+                ? "linear-gradient(to top, #ff0000, #ffcc00, #ffffff)" 
+                : "linear-gradient(to top, #ff4500, #ff8c00, transparent)";
+        }
 
-        // Button Group Logic
+        chiliSlider.addEventListener('input', updateFlame);
+        window.addEventListener('resize', updateFlame); // Keep aligned on resize
+        updateFlame(); // Initial call
+
         document.querySelectorAll('.btn-grid button').forEach(btn => {
             btn.addEventListener('click', () => {
                 btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('active'));
@@ -122,7 +134,6 @@
             });
         });
 
-        // AI Logic
         async function setupCamera() {
             const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
             video.srcObject = stream;
@@ -146,11 +157,8 @@
             detect();
         }
 
-        // The Master Chef Sequence
         launchBtn.addEventListener('click', async () => {
             launchBtn.disabled = true;
-            
-            // Get Active Selections
             const ingredients = [
                 document.querySelector('[data-group="protein"] .active img')?.src,
                 document.querySelector('[data-group="side"] .active img')?.src,
@@ -160,7 +168,6 @@
             scannerOverlay.classList.add('hidden');
             chefStage.classList.remove('hidden');
 
-            // 1. Drop Animation Sequence
             for (const src of ingredients) {
                 await new Promise(res => {
                     dropZone.style.backgroundImage = `url('${src}')`;
@@ -170,23 +177,20 @@
                 });
             }
 
-            // 2. Cooking Sequence
             launchBtn.innerText = "SIZZLING...";
-            chefImg.style.animationDuration = '0.15s'; // Fast shake
+            chefImg.style.animationDuration = '0.15s';
 
             setTimeout(() => {
-                // 3. Serve Sequence
                 chefImg.style.animation = 'none';
                 plate.classList.remove('hidden');
                 launchBtn.innerText = "SERVED!";
-
                 setTimeout(() => {
                     chefStage.classList.add('hidden');
                     plate.classList.add('hidden');
                     scannerOverlay.classList.remove('hidden');
                     launchBtn.innerText = "INITIALIZE COOK";
                     launchBtn.disabled = false;
-                    chefImg.style.animation = ''; // Reset chef
+                    chefImg.style.animation = '';
                 }, 4000);
             }, 2000);
         });
