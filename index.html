@@ -22,12 +22,22 @@
         </header>
 
         <main class="main-layout">
-            <!-- Left Panel: AI Vision & Chef Stage -->
+            <!-- Left Panel: AI Vision & Chef Narrative Stage -->
             <section class="vision-panel">
                 <div class="camera-feed thai-border">
                     <div id="chef-stage" class="hidden">
                         <div class="chef-container">
-                            <img src="images/thai-chef.png" alt="Chef" class="chef-sprite">
+                            <img src="images/thai-chef.png" alt="Chef" class="chef-sprite" id="chef-img">
+                            
+                            <!-- Falling Ingredient Hook -->
+                            <div id="ingredient-drop" class="hidden"></div>
+                            
+                            <!-- Final Served Plate -->
+                            <div id="final-plate" class="hidden">
+                                <img src="images/krapow-plate.png" alt="Finished Dish" class="plate-img">
+                                <p class="serve-text">อร่อย! (ENJOY!)</p>
+                            </div>
+
                             <div class="cooking-fx">
                                 <div class="steam-particle"></div>
                                 <div class="fire-base"></div>
@@ -41,39 +51,35 @@
 
             <!-- Right Panel: Interactive Controls -->
             <section class="control-panel">
-                <!-- 01. Proteins -->
                 <div class="menu-card protein-card">
                     <h3><span class="thai-num">๑</span> PROTEIN</h3>
-                    <div class="btn-grid">
+                    <div class="btn-grid" data-group="protein">
                         <button class="active"><img src="images/pork.png" alt="" class="food-icon">PORK</button>
                         <button><img src="images/chicken.png" alt="" class="food-icon">CHICKEN</button>
                         <button><img src="images/beef.png" alt="" class="food-icon">BEEF</button>
                     </div>
                 </div>
 
-                <!-- 02. Sides -->
                 <div class="menu-card side-card">
                     <h3><span class="thai-num">๒</span> SIDES</h3>
-                    <div class="btn-grid">
-                        <button><img src="images/white-rice.png" alt="" class="food-icon">WHITE RICE</button>
+                    <div class="btn-grid" data-group="side">
+                        <button class="active"><img src="images/white-rice.png" alt="" class="food-icon">WHITE RICE</button>
                         <button><img src="images/brown-rice.png" alt="" class="food-icon">BROWN RICE</button>
                         <button><img src="images/puree.png" alt="" class="food-icon">PUREE</button>
                         <button>NONE</button>
                     </div>
                 </div>
 
-                <!-- 03. Veggies -->
                 <div class="menu-card veggie-card">
                     <h3><span class="thai-num">๓</span> VEGGIES</h3>
-                    <div class="btn-grid">
-                        <button><img src="images/tofu.png" alt="" class="food-icon">TOFU</button>
+                    <div class="btn-grid" data-group="veggie">
+                        <button class="active"><img src="images/tofu.png" alt="" class="food-icon">TOFU</button>
                         <button><img src="images/lettuce.png" alt="" class="food-icon">LETTUCE</button>
                         <button><img src="images/spinach.png" alt="" class="food-icon">SPINACH</button>
                         <button><img src="images/kale.png" alt="" class="food-icon">KALE</button>
                     </div>
                 </div>
 
-                <!-- 04. Chili Level -->
                 <div class="menu-card spice-card">
                     <h3><span class="thai-num">๔</span> CHILI LEVEL</h3>
                     <div class="flame-zone">
@@ -96,16 +102,19 @@
         const scannerOverlay = document.querySelector(".scanner-overlay");
         const chiliSlider = document.getElementById("chili-slider");
         const sliderFlame = document.getElementById("slider-flame");
+        const dropZone = document.getElementById('ingredient-drop');
+        const plate = document.getElementById('final-plate');
+        const chefImg = document.getElementById('chef-img');
 
-        // Flame Logic
+        // Flame Animation Logic
         chiliSlider.addEventListener('input', (e) => {
             const val = e.target.value;
             const scale = 0.5 + (val * 0.3);
             sliderFlame.style.transform = `scale(${scale})`;
-            sliderFlame.style.boxShadow = `0 0 ${val * 4}px #ff4500`;
+            sliderFlame.style.boxShadow = `0 0 ${val * 5}px #ff4500`;
         });
 
-        // Button Group Selection Logic
+        // Button Group Logic
         document.querySelectorAll('.btn-grid button').forEach(btn => {
             btn.addEventListener('click', () => {
                 btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('active'));
@@ -113,7 +122,7 @@
             });
         });
 
-        // AI Setup
+        // AI Logic
         async function setupCamera() {
             const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
             video.srcObject = stream;
@@ -129,7 +138,7 @@
                     const gesture = await GE.estimate(predictions[0].landmarks, 8.5);
                     if (gesture.gestures.length > 0) {
                         const best = gesture.gestures.sort((a,b) => b.confidence - a.confidence)[0];
-                        if (best.name === 'thumbs_up') { launchBtn.click(); }
+                        if (best.name === 'thumbs_up' && !launchBtn.disabled) { launchBtn.click(); }
                     }
                 }
                 requestAnimationFrame(detect);
@@ -137,15 +146,49 @@
             detect();
         }
 
-        launchBtn.addEventListener('click', () => {
+        // The Master Chef Sequence
+        launchBtn.addEventListener('click', async () => {
+            launchBtn.disabled = true;
+            
+            // Get Active Selections
+            const ingredients = [
+                document.querySelector('[data-group="protein"] .active img')?.src,
+                document.querySelector('[data-group="side"] .active img')?.src,
+                document.querySelector('[data-group="veggie"] .active img')?.src
+            ].filter(Boolean);
+
             scannerOverlay.classList.add('hidden');
             chefStage.classList.remove('hidden');
-            launchBtn.innerText = "Sizzling...";
+
+            // 1. Drop Animation Sequence
+            for (const src of ingredients) {
+                await new Promise(res => {
+                    dropZone.style.backgroundImage = `url('${src}')`;
+                    dropZone.className = 'ingredient-anim';
+                    dropZone.classList.remove('hidden');
+                    setTimeout(() => { dropZone.classList.add('hidden'); res(); }, 800);
+                });
+            }
+
+            // 2. Cooking Sequence
+            launchBtn.innerText = "SIZZLING...";
+            chefImg.style.animationDuration = '0.15s'; // Fast shake
+
             setTimeout(() => {
-                chefStage.classList.add('hidden');
-                scannerOverlay.classList.remove('hidden');
-                launchBtn.innerText = "INITIALIZE COOK";
-            }, 6000);
+                // 3. Serve Sequence
+                chefImg.style.animation = 'none';
+                plate.classList.remove('hidden');
+                launchBtn.innerText = "SERVED!";
+
+                setTimeout(() => {
+                    chefStage.classList.add('hidden');
+                    plate.classList.add('hidden');
+                    scannerOverlay.classList.remove('hidden');
+                    launchBtn.innerText = "INITIALIZE COOK";
+                    launchBtn.disabled = false;
+                    chefImg.style.animation = ''; // Reset chef
+                }, 4000);
+            }, 2000);
         });
 
         setupCamera().then(runAI);
