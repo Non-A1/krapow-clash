@@ -2,78 +2,99 @@
     --thai-gold: #D4AF37;
     --thai-maroon: #4A0E0E;
     --thai-black: #1A1A1A;
-    --neon-blue: #00F3FF; /* Keeping blue for technical feedback */
 }
 
 body, html {
     background-color: var(--thai-black);
     background-image: radial-gradient(circle, #2a0a0a 1px, transparent 1px);
-    background-size: 30px 30px; /* Subtle pattern */
+    background-size: 30px 30px;
     color: #f1f1f1;
-    font-family: 'Georgia', serif; /* More traditional feel */
+    font-family: 'Georgia', serif;
+    margin: 0;
+    overflow-x: hidden;
 }
 
 .hud-container {
     padding: 15px;
     border: 2px solid var(--thai-gold);
     margin: 5px;
-    min-height: 98vh;
+    min-height: 95vh;
 }
 
 header h1 {
     color: var(--thai-gold);
     text-align: center;
-    text-transform: uppercase;
-    letter-spacing: 3px;
     border-bottom: 2px solid var(--thai-gold);
     padding-bottom: 10px;
 }
 
-.gold-text { font-family: sans-serif; opacity: 0.8; margin-left: 10px; }
+.main-layout { display: flex; flex-direction: column; gap: 15px; }
 
-/* Thai Borders & Numbers */
-.thai-border { border: 3px double var(--thai-gold); padding: 5px; }
-.thai-num { color: var(--thai-gold); font-weight: bold; margin-right: 5px; }
+@media (min-width: 768px) {
+    .main-layout { flex-direction: row; }
+    .vision-panel, .control-panel { flex: 1; }
+}
 
-/* Menu Cards - Silk Feel */
+/* Chef Stage & Wok */
+.camera-feed {
+    width: 100%;
+    aspect-ratio: 4/3;
+    background: #111;
+    border: 3px double var(--thai-gold);
+    position: relative;
+    overflow: hidden;
+}
+
+.chef-sprite {
+    width: 140px;
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    animation: sizzle 0.3s infinite alternate;
+}
+
+@keyframes sizzle { from { transform: translateX(-50%) rotate(-2deg); } to { transform: translateX(-50%) rotate(2deg); } }
+
+/* Button Grid */
 .menu-card {
     background: linear-gradient(135deg, #222 0%, #111 100%);
-    border: 1px solid #444;
     border-left: 5px solid var(--thai-gold);
-    padding: 12px;
-    margin-bottom: 15px;
-    border-radius: 0 10px 10px 0;
+    padding: 10px;
+    margin-bottom: 10px;
 }
 
-/* User Friendly Buttons */
+.btn-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 8px; }
+
 .btn-grid button {
-    background: rgba(212, 175, 55, 0.05);
+    background: transparent;
     border: 1px solid #444;
     color: #ccc;
-    padding: 12px 5px;
+    padding: 10px 5px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 0.65rem;
     transition: 0.3s;
-    border-radius: 5px;
-    font-size: 0.7rem;
 }
+
+.food-icon { width: 24px; height: 24px; margin-bottom: 5px; filter: invert(1); }
 
 .btn-grid button.active {
     background: var(--thai-gold);
     color: black;
-    border-color: #fff;
-    box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
+    transform: scale(1.05);
+    box-shadow: 0 0 15px var(--thai-gold);
 }
 
-.launch-btn.thai-btn {
+.launch-btn {
+    width: 100%;
+    padding: 20px;
     background: linear-gradient(to right, #8b0000, var(--thai-maroon));
     border: 2px solid var(--thai-gold);
     color: var(--thai-gold);
-    font-size: 1.2rem;
-    letter-spacing: 2px;
-    text-shadow: 1px 1px #000;
+    font-weight: bold;
+    cursor: pointer;
 }
 
-/* Mobile Responsiveness */
-@media (min-width: 768px) {
-    .main-layout { display: flex; flex-direction: row; gap: 30px; }
-    .vision-panel, .control-panel { flex: 1; }
-}
+.hidden { display: none; }
