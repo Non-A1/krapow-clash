@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Krapow-Clash | Bamboo Hut AI HUD</title>
-    <!-- LIBS: Versions locked for stability -->
+    <!-- LIBS: Locked versions for stability on Desktop & S25 Ultra -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.11.0/dist/tf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/handpose@0.0.7/dist/handpose.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/fingerpose@0.3.0/dist/fingerpose.min.js"></script>
@@ -14,7 +14,7 @@
     <div class="hud-container">
         <header>
             <div class="status-bar">
-                <span>● SAWASDEE</span>
+                <span class="pulse">● SAWASDEE</span>
                 <span id="ai-status">AI: LOADING...</span>
             </div>
             <h1>KRAPOW-CLASH <span class="gold-text">กะเพรา</span></h1>
@@ -23,22 +23,16 @@
         <main class="main-layout">
             <section class="vision-panel">
                 <div class="camera-feed thai-border">
-                    <!-- Debug HUD for Desktop Troubleshooting -->
                     <div id="debug-log">Ready...</div>
-                    
                     <div id="chef-stage" class="hidden">
                         <div class="chef-container">
                             <img src="images/thai-chef.png" alt="Chef" class="chef-sprite" id="chef-img">
-                            
-                            <!-- Ingredient Throwing Animation Hook -->
                             <div id="ingredient-drop" class="hidden"></div>
-                            
-                            <!-- Presentation Plate -->
                             <div id="final-plate" class="hidden">
-                                <img src="images/krapow-plate.png" alt="Finished Dish" class="plate-img">
+                                <!-- This image source is updated dynamically by the script -->
+                                <img src="images/krapow-plate.png" alt="Finished Dish" class="plate-img" id="dynamic-dish">
                                 <p class="serve-text">อร่อย! (ENJOY!)</p>
                             </div>
-
                             <div class="cooking-fx"><div class="steam-particle"></div></div>
                         </div>
                     </div>
@@ -47,27 +41,28 @@
             </section>
 
             <section class="control-panel">
-                <!-- Ingredients Groups (Grouped for Logic) -->
                 <div class="menu-card" data-category="protein">
                     <h3>๑. PROTEIN</h3>
                     <div class="btn-grid">
-                        <button class="active"><img src="images/pork.png" alt="" class="food-icon">PORK</button>
-                        <button><img src="images/chicken.png" alt="" class="food-icon">CHICKEN</button>
-                        <button><img src="images/beef.png" alt="" class="food-icon">BEEF</button>
+                        <button class="active">PORK <img src="images/pork.png" alt="" class="hidden-icon"></button>
+                        <button>CHICKEN <img src="images/chicken.png" alt="" class="hidden-icon"></button>
+                        <button>BEEF <img src="images/beef.png" alt="" class="hidden-icon"></button>
                     </div>
                 </div>
                 <div class="menu-card" data-category="side">
                     <h3>๒. SIDES</h3>
                     <div class="btn-grid">
-                        <button class="active"><img src="images/white-rice.png" alt="" class="food-icon">WHITE RICE</button>
-                        <button><img src="images/brown-rice.png" alt="" class="food-icon">BROWN RICE</button>
+                        <button class="active">WHITE RICE <img src="images/white-rice.png" alt="" class="hidden-icon"></button>
+                        <button>BROWN RICE <img src="images/brown-rice.png" alt="" class="hidden-icon"></button>
+                        <button>PUREE <img src="images/puree.png" alt="" class="hidden-icon"></button>
                     </div>
                 </div>
                 <div class="menu-card" data-category="veggie">
                     <h3>๓. VEGGIES</h3>
                     <div class="btn-grid">
-                        <button class="active"><img src="images/tofu.png" alt="" class="food-icon">TOFU</button>
-                        <button><img src="images/spinach.png" alt="" class="food-icon">SPINACH</button>
+                        <button class="active">TOFU <img src="images/tofu.png" alt="" class="hidden-icon"></button>
+                        <button>SPINACH <img src="images/spinach.png" alt="" class="hidden-icon"></button>
+                        <button>KALE <img src="images/kale.png" alt="" class="hidden-icon"></button>
                     </div>
                 </div>
 
@@ -93,6 +88,7 @@
         const dropZone = document.getElementById('ingredient-drop');
         const plate = document.getElementById('final-plate');
         const chefImg = document.getElementById('chef-img');
+        const dynamicDish = document.getElementById('dynamic-dish');
 
         // Logic: Button Selection
         document.querySelectorAll('.btn-grid button').forEach(btn => {
@@ -102,17 +98,15 @@
             });
         });
 
-        // Logic: Camera & AI Initialization
+        // Logic: AI Init
         async function initApp() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true });
                 video.srcObject = stream;
                 await video.play();
-                
                 const model = await handpose.load();
-                const fpLib = window.fp || window.fingerpose; // Corrected dependency check
+                const fpLib = window.fp || window.fingerpose;
                 const GE = new fpLib.GestureEstimator([fpLib.Gestures.ThumbsUpGesture]);
-                
                 document.getElementById('ai-status').innerText = "AI: ACTIVE";
 
                 async function detect() {
@@ -130,15 +124,22 @@
             } catch (err) { debugLog.innerText = "Error: " + err.message; }
         }
 
-        // Narrative Sequence: Drop -> Sizzle -> Serve
+        // Narrative Sequence: Dynamic Asset Loading
         launchBtn.addEventListener('click', async () => {
             launchBtn.disabled = true;
+
+            // 1. Construct Unique Filename based on selections
+            const protein = document.querySelector('[data-category="protein"] .active').innerText.toLowerCase().trim();
+            const side = document.querySelector('[data-category="side"] .active').innerText.toLowerCase().replace(" ", "-");
+            const veggie = document.querySelector('[data-category="veggie"] .active').innerText.toLowerCase().trim();
+            const finalDishKey = `${protein}-${side}-${veggie}.png`;
+
             const ingredients = Array.from(document.querySelectorAll('.btn-grid button.active img')).map(img => img.src);
             
             document.querySelector('.scanner-overlay').classList.add('hidden');
             chefStage.classList.remove('hidden');
 
-            // 1. Ingredients Throwing Phase
+            // 2. Throwing Animation
             for (const src of ingredients) {
                 await new Promise(res => {
                     dropZone.style.backgroundImage = `url('${src}')`;
@@ -148,12 +149,14 @@
                 });
             }
 
-            // 2. Cooking Phase
-            launchBtn.innerText = "SIZZLING...";
-            chefImg.style.animationDuration = '0.15s'; // Fast wok tossing
+            launchBtn.innerText = "COOKING...";
+            chefImg.style.animationDuration = '0.15s';
 
             setTimeout(() => {
-                // 3. Presentation Phase
+                // 3. Update Presentation Plate with unique dish
+                dynamicDish.src = `images/finished/${finalDishKey}`;
+                dynamicDish.onerror = () => { dynamicDish.src = 'images/krapow-plate.png'; }; // Fallback
+
                 chefImg.style.animation = 'none';
                 plate.classList.remove('hidden');
                 launchBtn.innerText = "SERVED!";
